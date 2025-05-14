@@ -1,0 +1,13 @@
+_template/template.typ
+
+# assets
+public/
+# generated
+html/
+
+# python
+__pycache__/
+.venv/
+
+# editor
+.vscode/
