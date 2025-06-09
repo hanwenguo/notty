@@ -35,12 +35,12 @@
 #show: template(
   title:      %s,
   date:       %s,
-  identifier: %s,
   tags:       %s,
+  identifier: %s,
   taxon:  %s,
 )")
 (defvar denote-notty-title-key-regexp "^\\s-*title\\s-*:")
-(defvar denote-notty-keywords-key-regexp "^\\s-*keywords\\s-*:")
+(defvar denote-notty-keywords-key-regexp "^\\s-*tags\\s-*:")
 (defvar denote-notty-signature-key-regexp "^\\s-*taxon\\s-*:")
 (defvar denote-notty-identifier-key-regexp "^\\s-*identifier\\s-*:")
 (defvar denote-notty-date-key-regexp "^\\s-*date\\s-*:")
