@@ -4,7 +4,8 @@
 
 #let _no-numbering = sys.inputs.at("no-numbering", default: none) != none
 
-#let _metadata(date, identifier, ..attrs) = {
+#let _default-metadata(date, identifier, ..attrs) = {
+  let author = attrs.at("author", default: site.config.default-author.name)
   div(
     ul(
       {
@@ -27,16 +28,30 @@
   )
 }
 
+#let _metadata(date, identifier, ..attrs) = {
+  let taxon = attrs.at("taxon", default: none)
+  if taxon != none {
+    let f = site.html-metadata-taxon-map.at(taxon, default: _default-metadata)
+    f(date, identifier, ..attrs)
+  } else {
+    _default-metadata(date, identifier, ..attrs)
+  }
+}
+
 #let _section(
   content,
   title: none,
   date: none,
   identifier: none,
-  author: site.config.default-author.name,
-  taxon: none,
-  lang: site.config.lang,
-  open: true
+  open: true,
+  ..attrs,
+  // author: site.config.default-author.name,
+  // taxon: none,
+  // lang: site.config.lang,
 ) = {
+  let taxon = attrs.at("taxon", default: none)
+  let author = attrs.at("author", default: site.config.default-author.name)
+  let lang = attrs.at("lang", default: site.config.lang)
   let id = if identifier != none { identifier } else { date.display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]") }
   // let title-prefix = context {
   //   let has-taxon = taxon != none
@@ -70,7 +85,7 @@
               },
               // attrs: if taxon != none { (taxon: taxon) } else { (:) }
             )
-            _metadata(date, identifier, author: author)
+            _metadata(date, identifier, ..attrs)
           })
         )
         content
@@ -87,13 +102,14 @@
   title: none,
   date: none,
   identifier: none,
-  author: site.config.default-author.name,
-  taxon: none,
-  lang: site.config.lang,
+  ..attrs,
+  // taxon: none,
+  // author: site.config.default-author.name,
+  // lang: site.config.lang,
 ) = {
   html.elem(
     "html",
-    _section(content, title: title, date: date, identifier: identifier, author: author, taxon: taxon, lang: lang)
+    _section(content, title: title, date: date, identifier: identifier, ..attrs)
   )
 }
 
@@ -101,10 +117,10 @@
   title: "", 
   date: none,
   identifier: none,
-  author: none, 
-  taxon: none,
-  lang: site.config.lang,
-  tags: none,
+  ..attrs,
+  // author: none, 
+  // taxon: none,
+  // lang: site.config.lang,
 ) = (doc) => {
   set math.equation(numbering: "(1)")
   show raw.where(block: false): it => html.elem("code", it.text)
@@ -123,19 +139,19 @@
   }
 
   ([#metadata((
-    taxon: taxon,
     title: title,
-    author: author,
-    date: date,
+    date: date.display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]"),
+    identifier: identifier,
   )) <frontmatter>])
   _main-part(
     doc,
     title: title,
     date: date,
     identifier: identifier,
-    author: author,
-    taxon: taxon,
-    lang: lang,
+    ..attrs,
+    // author: author,
+    // taxon: taxon,
+    // lang: lang,
   )
   set document(title: title, date: date)
 }

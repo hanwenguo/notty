@@ -7,12 +7,14 @@ This is a working example for taking notes in the spirit of [Forester](https://w
 - [x] Transclusion of notes
 - [x] Export to PDF and HTML
 - [x] Integretation with [Emacs denote package](https://protesilaos.com/emacs/denote)
+- [x] Dispatch metadata processing by taxonomy
 
 ## TODO
 - [ ] Backmatters: backlinks, contexts, etc.
 - [ ] TOC
-- [ ] Dispatch metadata processing by taxonomy
 - [ ] Bibliography support
+    - [ ] Generate nodes for references
+    - [ ] Reference section in backmatter
 - [ ] Multiple authors & contributors
 - [ ] Multilingual support
 - [ ] Parallel building of notes

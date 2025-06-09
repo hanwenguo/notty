@@ -10,8 +10,8 @@
   "Zhuque Fangsong (technical preview)",
 )
 
-#let _metadata(date, identifier, ..attrs) = {
-  let author = attrs.at("author", default: none)
+#let _default-metadata(date, identifier, ..attrs) = {
+  let author = attrs.at("author", default: site.config.default-author.name)
   [#block(width: 100%, [
     #set text(font: sans-fonts, size: 11pt)
     #if author != none { author }
@@ -21,15 +21,27 @@
   ]) <metadata>]
 }
 
+#let _metadata(date, identifier, ..attrs) = {
+  let taxon = attrs.at("taxon", default: none)
+  if taxon != none {
+    let f = site.paged-metadata-taxon-map.at(taxon, default: _default-metadata)
+    f(date, identifier, ..attrs)
+  } else {
+    _default-metadata(date, identifier, ..attrs)
+  }
+}
+
 #let _main-part(
   content,
   title: none,
   date: none,
   identifier: none,
-  author: none,
-  taxon: "",
-  lang: site.config.lang,
+  ..attrs,
+  // taxon: "",
+  // author: site.config.default-author.name,
 ) = {
+  let taxon = attrs.at("taxon", default: none)
+  let author = attrs.at("author", default: site.config.default-author.name)
   heading(depth: 1, {
     if taxon != none { taxon }
     context if counter("transclusion-depth").get().at(0) != 0 {
@@ -40,7 +52,7 @@
     } else if taxon != none { ". " }
     title
   })
-  _metadata(date, identifier, author: author)
+  _metadata(date, identifier, ..attrs)
   content
 }
 
@@ -59,10 +71,10 @@
   title: "",
   date: none,
   identifier: none,
-  author: none,
-  taxon: none,
-  lang: site.config.lang,
-  tags: none,
+  ..attrs,
+  // author: none,
+  // taxon: none,
+  // lang: site.config.lang,
 ) = doc => {
   set page(
     paper: "us-letter",
@@ -136,10 +148,9 @@
 
   (
     [#metadata((
-        taxon: taxon,
         title: title,
-        author: author,
-        date: date,
+        date: date.display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]"),
+        identifier: identifier,
       )) <frontmatter>]
   )
   _main-part(
@@ -147,9 +158,10 @@
     title: title,
     date: date,
     identifier: identifier,
-    author: author,
-    taxon: taxon,
-    lang: lang,
+    ..attrs,
+    // author: author,
+    // taxon: taxon,
+    // lang: lang,
   )
 }
 

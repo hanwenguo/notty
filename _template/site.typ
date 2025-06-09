@@ -14,3 +14,11 @@
 #let id-to-path(id) = {
   id-to-path-map.at(id)
 }
+
+#let html-metadata-taxon-map = (
+  :
+)
+
+#let paged-metadata-taxon-map = (
+  :
+)
