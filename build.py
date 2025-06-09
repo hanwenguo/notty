@@ -29,13 +29,13 @@ PUBLIC_DIR = ROOT_DIR / "public"
 TEMPLATES_DIR = ROOT_DIR / "_template"
 
 ID_PATH_MAP_FILE = TYPST_DIR / "id_path_map.json"
-PDF_TEMPLATE_SRC = TEMPLATES_DIR / "template-paged.typ"
-HTML_TEMPLATE_SRC = TEMPLATES_DIR / "template-html.typ"
-ACTIVE_TEMPLATE_DST = TEMPLATES_DIR / "template.typ"
+# PDF_TEMPLATE_SRC = TEMPLATES_DIR / "template-paged.typ"
+# HTML_TEMPLATE_SRC = TEMPLATES_DIR / "template-html.typ"
+# ACTIVE_TEMPLATE_DST = TEMPLATES_DIR / "template.typ"
 
-TYPST_COMMON_FLAGS = ["--root", str(ROOT_DIR)]
-TYPST_HTML_FLAGS = TYPST_COMMON_FLAGS + ["--features", "html", "--format", "html"]
-TYPST_PDF_FLAGS = TYPST_COMMON_FLAGS + ["--format", "pdf"]
+TYPST_COMMON_FLAGS = ["--root", str(ROOT_DIR), "--features", "html"]
+TYPST_HTML_FLAGS = TYPST_COMMON_FLAGS + ["--format", "html", "--input", "x-target=html"]
+TYPST_PDF_FLAGS = TYPST_COMMON_FLAGS + ["--format", "pdf", "--input", "x-target=paged"]
 
 # Regex to extract timestamp (YYYYMMDDTHHMMSS) from start of filename
 FILENAME_TIMESTAMP_RE = re.compile(r"^(\d{8}T\d{6})(.*)?\.typ$")
@@ -164,15 +164,15 @@ def copy_public_assets():
     shutil.copytree(PUBLIC_DIR, HTML_DIR, dirs_exist_ok=True)
 
 
-def prepare_template(template_type):
-    """Copies the correct template file."""
-    src_template = PDF_TEMPLATE_SRC if template_type == "pdf" else HTML_TEMPLATE_SRC
-    if not src_template.exists():
-        print(f"Error: Source template {src_template} not found.")
-        return False
-    print(f"Setting active template to {src_template.name}...")
-    shutil.copy2(src_template, ACTIVE_TEMPLATE_DST)
-    return True
+# def prepare_template(template_type):
+#     """Copies the correct template file."""
+#     src_template = PDF_TEMPLATE_SRC if template_type == "pdf" else HTML_TEMPLATE_SRC
+#     if not src_template.exists():
+#         print(f"Error: Source template {src_template} not found.")
+#         return False
+#     print(f"Setting active template to {src_template.name}...")
+#     shutil.copy2(src_template, ACTIVE_TEMPLATE_DST)
+#     return True
 
 # --- Build Functions ---
 
@@ -230,8 +230,8 @@ def build_backmatters(parts: list[tuple[str, str]]):
 def build_html():
     """Builds all HTML files."""
     print("--- Building HTML ---")
-    if not prepare_template("html"):
-        return
+    # if not prepare_template("html"):
+    #     return
     copy_public_assets() # Copy assets first
 
     sources = get_typst_sources()
@@ -352,8 +352,8 @@ def build_html():
 def build_pdf():
     """Builds all PDF files."""
     print("--- Building PDF ---")
-    if not prepare_template("pdf"):
-        return
+    # if not prepare_template("pdf"):
+    #     return
 
     sources = get_typst_sources()
     if not sources:
@@ -466,9 +466,9 @@ def clean_all():
     clean_pdf()
     clean_html()
     # Optionally remove the active template copy
-    if ACTIVE_TEMPLATE_DST.exists():
-        print(f"Removing {ACTIVE_TEMPLATE_DST}...")
-        ACTIVE_TEMPLATE_DST.unlink()
+    # if ACTIVE_TEMPLATE_DST.exists():
+    #     print(f"Removing {ACTIVE_TEMPLATE_DST}...")
+    #     ACTIVE_TEMPLATE_DST.unlink()
     print("--- Cleaning Complete ---")
 
 
