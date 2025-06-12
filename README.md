@@ -8,9 +8,10 @@ This is a working example for taking notes in the spirit of [Forester](https://w
 - [x] Export to PDF and HTML
 - [x] Integretation with [Emacs denote package](https://protesilaos.com/emacs/denote)
 - [x] Dispatch metadata processing by taxonomy
+- [x] Backmatters: backlinks, contexts, etc.
 
 ## TODO
-- [ ] Backmatters: backlinks, contexts, etc.
+- [ ] Better looking for backmatters
 - [ ] TOC
 - [ ] Bibliography support
     - [ ] Generate nodes for references

@@ -176,6 +176,21 @@
   }
 }
 
+#let _find-main-content-title-only(c) = {
+  let children = c.children
+  let p = children.position(it => it.func() == _styled)
+  if p != none {
+    let child = children.at(p)
+    let seq = child.child.children
+    let t = seq.position(it => it.func() == heading)
+    if t != none {
+      _sequence(seq.slice(0, t + 2)) // this is very specific to this template
+    } else { none }
+  } else {
+    none
+  }
+}
+
 #let ln(dest, body) = link(dest, body)
 // {
 //   if type(dest) == str {
@@ -187,32 +202,110 @@
 //   } else { it }
 // }
 
-#let tr(url, hide-metadata: true, open: true) = {
+#let tr(url, hide-metadata: true, open: true, heading-offset: 1) = {
   if url.starts-with("denote:") {
     let identifier = url.slice(7)
     let path = site.id-to-path(identifier)
+    let fmc-func = if open {
+      _find-main-content
+    } else {
+      _find-main-content-title-only
+    }
     if hide-metadata {
       show label("metadata"): it => none
       transclude(
         path,
-        heading-offset: 1,
+        heading-offset: heading-offset,
         transform-heading: x => x,
         transform-other: x => {
           if x.func() == metadata { none } else { x }
         },
-        find-main-content: _find-main-content,
+        find-main-content: fmc-func,
       )
     } else {
       show label("metadata"): it => it
       transclude(
         path,
-        heading-offset: 1,
+        heading-offset: heading-offset,
         transform-heading: x => x,
         transform-other: x => {
           if x.func() == metadata { none } else { x }
         },
-        find-main-content: _find-main-content,
+        find-main-content: fmc-func,
       )
     }
+  }
+}
+
+#let backmatters(parts: ()) = {
+  set page(
+    paper: "us-letter",
+    margin: (
+      left: 1in,
+      right: 1in,
+      top: 1.5in,
+      bottom: 1.5in,
+    ),
+  )
+
+  set text(
+    font: serif-fonts,
+    fill: luma(30),
+    style: "normal",
+    weight: "regular",
+    hyphenate: true,
+    size: 11pt,
+  )
+  show text.where(style: "italic"): set text(font: serif-italic-fonts)
+
+  set math.equation(numbering: "(1)")
+  show math.equation: set block(spacing: 0.65em)
+  show math.equation: set text(font: "IBM Plex Math")
+
+  set enum(indent: 1em, body-indent: 1em)
+  show enum: set par(justify: false)
+  set list(indent: 1em, body-indent: 1em)
+  show list: set par(justify: false)
+
+  // set heading(numbering: if not _no-numbering { "1." } else { none })
+  show heading.where(depth: 1): it => {
+    let title = it.body
+    {
+      set text(hyphenate: false, size: 20pt, font: sans-fonts)
+      set par(justify: false, leading: 0.2em, first-line-indent: 0pt)
+      title
+    }
+  }
+
+  show heading.where(depth: 2): it => {
+    v(2em, weak: true)
+    text(size: 14pt, weight: "bold", it)
+    v(1em, weak: true)
+  }
+
+  show heading.where(depth: 3): it => {
+    v(1.3em, weak: true)
+    text(size: 13pt, weight: "regular", style: "italic", it)
+    v(1em, weak: true)
+  }
+
+  show heading.where(depth: 4): it => {
+    v(1em, weak: true)
+    text(size: 11pt, style: "italic", weight: "thin", it)
+    v(0.65em, weak: true)
+  }
+
+  set par(leading: 0.65em, first-line-indent: 1em, spacing: 0.65em)
+
+  show link: handle-denote-link
+
+  for part in parts {
+    let (name, urls) = part
+    [
+      #heading(level: 2, name)
+      #for url in urls {
+        tr(url, hide-metadata: false, open: false, heading-offset: 2)
+      }
+    ]
   }
 }

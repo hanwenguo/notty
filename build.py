@@ -2,6 +2,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
+#     "pypdf",
 #     "ripgrepy",
 # ]
 # ///
@@ -10,12 +11,14 @@ import os
 import re
 import shutil
 import subprocess
+from io import BytesIO
 from pathlib import Path
 import http.server
 import socketserver
 import contextlib
 import json
 from ripgrepy import Ripgrepy
+from pypdf import PdfReader, PdfWriter
 
 # --- Configuration ---
 ROOT_DIR = Path(__file__).parent.resolve()
@@ -49,13 +52,13 @@ with open(ID_PATH_MAP_FILE, "r", encoding="utf-8") as f:
 
 # --- Helper Functions ---
 
-def run_command(cmd_list, cwd=None, print_stdout=True, input_stdin: str | None = None):
+def run_command(cmd_list, cwd=None, print_stdout=True, input_stdin: str | bytes | None = None, text=True):
     """Runs a command and returns the result object.
     Optionally prints stdout. Always prints stderr if present (on success or failure).
     """
     print(f"Running: {' '.join(map(str, cmd_list))}")
     try:
-        result = subprocess.run(cmd_list, check=True, capture_output=True, text=True, cwd=cwd, input=input_stdin)
+        result = subprocess.run(cmd_list, check=True, capture_output=True, text=text, cwd=cwd, input=input_stdin)
         if print_stdout and result.stdout:
             print("Command STDOUT:")
             print(result.stdout)
@@ -136,7 +139,8 @@ def write_id_to_path_map():
 
 def get_target_filename(source_path, output_dir, extension):
     """Determines the target filename based on the timestamp."""
-    target_id = PATH_ID_MAP.get(source_path, None)
+    source_path_relative = str(source_path.relative_to(ROOT_DIR))
+    target_id = PATH_ID_MAP.get(f"/{source_path_relative}", None)
     if not target_id:
         match = FILENAME_TIMESTAMP_RE.match(source_path.name)
         if match:
@@ -223,8 +227,10 @@ def build_backmatters(parts: list[tuple[str, str]]):
     built_sections = [build_backmatters_section(title, query) for title, query in parts]
     # Filter out None values
     sections_filtered = [section for section in built_sections if section is not None]
+    if len(sections_filtered) == 0:
+        return None
     parts_unwrapped = ", ".join(sections_filtered) + ","
-    parts_arg = f"({"" if len(sections_filtered) == 0 else parts_unwrapped})"
+    parts_arg = f"({parts_unwrapped})"
     return f"#import \"/_template/template.typ\": backmatters\n#backmatters(parts: {parts_arg})"
 
 def build_html():
@@ -268,14 +274,6 @@ def build_html():
             str(source_file),
             "-" # Output to stdout
         ]
-        backmatters_cmd = [
-            TYPST_EXE,
-            TYPST_SUBCOMMAND,
-            *TYPST_HTML_FLAGS,
-            "--input", "no-numbering=true",
-            "-", # Read from stdin
-            "-" # Output to stdout
-        ]
         try:
             # Run typst, get its output from stdout, don't print its stdout here
             result = run_command(cmd, print_stdout=False)
@@ -309,24 +307,32 @@ def build_html():
                     title = re.sub(r'<[^>]+>', '', raw_title).strip()
                     
             if extracted_content:
+                backmatters_cmd = [
+                    TYPST_EXE,
+                    TYPST_SUBCOMMAND,
+                    *TYPST_HTML_FLAGS,
+                    "--input", "no-numbering=true",
+                    "-", # Read from stdin
+                    "-" # Output to stdout
+                ]
                 backmatters_parts = [
                     ("Backlinks", query_for_backlinks(source_file)),
                     ("Contexts", query_for_contexts(source_file)),
                 ]
                 backmatters_section = build_backmatters(backmatters_parts)
-                
-                backmatters_result = run_command(backmatters_cmd, print_stdout=False, input_stdin=backmatters_section)
-                backmatters_output_str = backmatters_result.stdout
-                if backmatters_output_str:
-                    # Extract content from between <html> ... </html> tags
-                    backmatters_content_match = re.search(r"<html[^>]*>(.*?)</html>", backmatters_output_str, re.DOTALL | re.IGNORECASE)
-                    if backmatters_content_match:
-                        extracted_backmatters_content = backmatters_content_match.group(1).strip()
-                        extracted_content += extracted_backmatters_content
+                if backmatters_section:
+                    backmatters_result = run_command(backmatters_cmd, print_stdout=False, input_stdin=backmatters_section)
+                    backmatters_output_str = backmatters_result.stdout
+                    if backmatters_output_str:
+                        # Extract content from between <html> ... </html> tags
+                        backmatters_content_match = re.search(r"<html[^>]*>(.*?)</html>", backmatters_output_str, re.DOTALL | re.IGNORECASE)
+                        if backmatters_content_match:
+                            extracted_backmatters_content = backmatters_content_match.group(1).strip()
+                            extracted_content += extracted_backmatters_content
+                        else:
+                            print(f"Warning: Could not find <html> tags in backmatters output for {source_file.name}.")
                     else:
-                        print(f"Warning: Could not find <html> tags in backmatters output for {source_file.name}.")
-                else:
-                    print(f"Warning: Backmatters command produced no output for {source_file.name}")
+                        print(f"Warning: Backmatters command produced no output for {source_file.name}")
 
             # Prepare the final HTML by substituting into the shell template
             current_html_output = shell_template_content
@@ -373,13 +379,49 @@ def build_pdf():
             TYPST_SUBCOMMAND,
             *TYPST_PDF_FLAGS,
             str(source_file),
-            str(target_file)
+            "-"
+            # str(target_file)
         ]
         try:
-            run_command(cmd, print_stdout=True) # Explicitly print Typst's stdout for PDF
+            result = run_command(cmd, print_stdout=False, text=False)
+            result_bytes = BytesIO(result.stdout)
+            if not result_bytes:
+                print(f"Warning: Typst produced no output for {source_file.name}")
+                continue
+            result_pdf = PdfReader(result_bytes)
+            
+            merger = PdfWriter()
+            merger.append(result_pdf)
+            backmatters_cmd = [
+                TYPST_EXE,
+                TYPST_SUBCOMMAND,
+                *TYPST_PDF_FLAGS,
+                "--input", "no-numbering=true",
+                "-",
+                "-"
+            ]
+            backmatters_parts = [
+                ("Backlinks", query_for_backlinks(source_file)),
+                ("Contexts", query_for_contexts(source_file)),
+            ]
+            backmatters_section = build_backmatters(backmatters_parts)
+            if backmatters_section:
+                backmatters_result = run_command(backmatters_cmd, print_stdout=False, input_stdin=backmatters_section.encode(), text=False)
+                backmatters_output_bytes = BytesIO(backmatters_result.stdout)
+                backmatters_output_pdf = PdfReader(backmatters_output_bytes)
+                if backmatters_output_pdf:
+                    merger.append(backmatters_output_pdf)
+                else:
+                    print(f"Warning: Backmatters command produced no output for {source_file.name}")
+            merger.write(target_file)
+            merger.close()
+            print(f"Successfully generated {target_file}")
         except subprocess.CalledProcessError:
             print(f"Failed to compile {source_file.name}")
             break # Stop on first error
+        except Exception as e:
+            print(f"An error occurred during PDF processing for {source_file.name}: {e}")
+            break
 
     print("--- PDF Build Complete ---")
 

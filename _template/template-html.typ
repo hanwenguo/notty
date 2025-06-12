@@ -236,7 +236,7 @@
   show math.equation: set text(size: 12pt, font: "IBM Plex Math")
   show math.equation.where(block: false): it => html.elem("span", html.frame(it), attrs: ("class": "typst-inline")) 
   show math.equation.where(block: true): div-frame.with(attrs: ("style": "display: flex; justify-content: center; overflow-x: auto;", "class": "typst-display"))
-  // show link: handle-denote-link
+
   show link: (it) => {
     if type(it.dest) == str {
       span(a(it.body, attrs: (href: it.dest)), class: ("link", "external"))
