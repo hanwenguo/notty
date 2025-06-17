@@ -2,6 +2,15 @@
 
 This is a working example for taking notes in the spirit of [Forester](https://www.forester-notes.org/index/index.xml) in [Typst](https://github.com/typst/typst).
 
+## Usage
+
+You need to have [Typst](https://github.com/typst/typst) and [uv](https://docs.astral.sh/uv/) and [rg](https://github.com/BurntSushi/ripgrep) installed.
+
+```bash
+chmod +x build.py
+./build.py --help
+```
+
 ## Features
 
 - [x] Transclusion of notes
