@@ -206,7 +206,7 @@
     if dest.starts-with("denote:") {
       let identifier = dest.slice(7)
       let new-dest = identifier + ".html"
-      span(a(body, attrs: (href: "/" + new-dest)), class: ("link", "local"))
+      span(a(body, attrs: (href: site.config.root-path + new-dest)), class: ("link", "local"))
     }
   } else { it }
 }
