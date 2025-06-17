@@ -51,3 +51,7 @@ Main differences are:
 ### [Kodama](https://github.com/kokic/kodama)
 
 Kodama is a similar project that uses Typst and Markdown to manage notes. The main difference is that Kodama uses Markdown as the primary note format, while Notty uses Typst.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0. 
