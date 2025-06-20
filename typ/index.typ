@@ -6,6 +6,4 @@
   identifier: "index",
 )
 
-This is the index page.
-
-#ln("denote:20250426T224704")[Node]
+This site is built with #ln("denote:20250619T223048")[Notty].
