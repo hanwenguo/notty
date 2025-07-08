@@ -9,3 +9,7 @@ __pycache__/
 
 # editor
 .vscode/
+
+# Added by cargo
+
+/target

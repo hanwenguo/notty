@@ -1,0 +1,22 @@
+[package]
+name = "notty"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = { version = "0.4.41", default-features = false, features = ["clock", "std"] }
+clap = { version = "4.5.40", features = ["derive", "env"] }
+codespan-reporting = "0.12.0"
+color-print = "0.3.7"
+parking_lot = "0.12.4"
+pathdiff = "0.2.3"
+rayon = "1.10.0"
+semver = "1.0.26"
+termcolor = "1.4.1"
+typst = "0.13.1"
+typst-html = "0.13.1"
+typst-kit = "0.13.1"
+typst-library = "0.13.1"
+typst-pdf = "0.13.1"
+typst-syntax = "0.13.1"
+typst-utils = "0.13.1"
