@@ -306,6 +306,11 @@ def build_html():
                     # Remove any HTML tags from the title for the <title> element
                     title = re.sub(r'<[^>]+>', '', raw_title).strip()
                     
+            id = get_identifier_from_path(source_file)
+            if id == "index":
+                # remove <header> from shell_template_content
+                shell_template_content = re.sub(r"<header[^>]*>.*?</header>", "", shell_template_content, flags=re.DOTALL | re.IGNORECASE)
+                
             if extracted_content:
                 backmatters_cmd = [
                     TYPST_EXE,
