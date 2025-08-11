@@ -2,6 +2,9 @@
 public/
 # generated
 html/
+dist/
+
+typ/id_path_map.json
 
 # python
 __pycache__/

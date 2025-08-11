@@ -1,13 +1,9 @@
 use std::fmt::{self, Display, Formatter};
-use std::num::NonZeroUsize;
-use std::ops::RangeInclusive;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
-use clap::builder::{TypedValueParser, ValueParser};
+use clap::builder::ValueParser;
 use clap::{ArgAction, Args, Parser, Subcommand, ValueEnum, ValueHint};
-use semver::Version;
 
 /// The character typically used to separate path components
 /// in environment variables.
@@ -52,19 +48,17 @@ pub enum Command {
     /// Compiles input file(s) to designated output format(s).
     #[command(visible_alias = "c")]
     Compile(CompileCommand),
-
-    /// Watches an input file and recompiles on changes.
+    // /// Watches an input file and recompiles on changes.
     // #[command(visible_alias = "w")]
     // Watch(WatchCommand),
 
-    /// Opens a preview server.
-    #[command(visible_alias = "s")]
-    Serve(ServeCommand),
-
+    // /// Opens a preview server.
+    // #[command(visible_alias = "s")]
+    // Serve(ServeCommand),
     // /// Initializes a new project from a template.
     // Init(InitCommand),
 
-    // /// Self update the Typst CLI.
+    // /// Self update the Notty CLI.
     // #[cfg_attr(not(feature = "self-update"), clap(hide = true))]
     // Update(UpdateCommand),
 }
@@ -77,7 +71,7 @@ pub struct CompileCommand {
     pub args: CompileArgs,
 }
 
-/// Compiles an input file into a supported output format.
+// Compiles an input file into a supported output format.
 // #[derive(Debug, Clone, Parser)]
 // pub struct WatchCommand {
 //     /// Arguments for compilation.
@@ -90,15 +84,15 @@ pub struct CompileCommand {
 //     pub server: ServerArgs,
 // }
 
-/// Opens a preview server.
-#[derive(Debug, Clone, Parser)]
-pub struct ServeCommand {
-    /// Arguments for the HTTP server.
-    #[clap(flatten)]
-    pub server: ServerArgs,
-}
+// Opens a preview server.
+// #[derive(Debug, Clone, Parser)]
+// pub struct ServeCommand {
+//     /// Arguments for the HTTP server.
+//     #[clap(flatten)]
+//     pub server: ServerArgs,
+// }
 
-/// Initializes a new project from a template.
+// Initializes a new project from a template.
 // #[derive(Debug, Clone, Parser)]
 // pub struct InitCommand {
 //     /// The template to use, e.g. `@preview/charged-ieee`.
@@ -146,22 +140,28 @@ pub struct ServeCommand {
 /// Arguments for compilation and watching.
 #[derive(Debug, Clone, Args)]
 pub struct CompileArgs {
-    /// Path to input Typst file or directory of files. Use `-` to read input from stdin.
-    #[clap(value_parser = input_value_parser(), value_hint = ValueHint::AnyPath, default_value = "content")]
-    pub input: Input,
+    /// Path to input directory.
+    #[clap(value_hint = ValueHint::DirPath, default_value = "typ")]
+    pub input: PathBuf,
 
-    /// Path to output file or directory of files. Use `-` to write output to stdout.
+    /// Path to intermediate HTML cache directory.
     #[clap(
-         value_parser = output_value_parser(),
-         value_hint = ValueHint::AnyPath,
+        long = "cache-dir",
+        value_hint = ValueHint::DirPath,
+        default_value = ".notty/cache"
+    )]
+    pub html_cache: PathBuf,
+
+    /// Path to output directory.
+    #[clap(
+         value_hint = ValueHint::DirPath,
          default_value = "dist"
      )]
-    pub output: Output,
+    pub output: PathBuf,
 
     // /// The format of the output file, inferred from the extension by default.
     // #[arg(long = "format", short = 'f', default_value = "all")]
     // pub format: OutputFormat,
-
     /// World arguments.
     #[clap(flatten)]
     pub world: WorldArgs,
@@ -181,7 +181,7 @@ pub struct CompileArgs {
 #[derive(Debug, Clone, Args)]
 pub struct WorldArgs {
     /// Configures the project root (for absolute paths).
-    #[clap(long = "root", env = "NOTTY_ROOT", value_name = "DIR")]
+    #[clap(long = "root", env = "NOTTY_ROOT", value_name = "DIR", value_hint = ValueHint::DirPath, default_value = ".")]
     pub root: Option<PathBuf>,
 
     /// Add a string key-value pair visible through `sys.inputs`.
@@ -263,25 +263,25 @@ pub struct FontArgs {
     pub ignore_system_fonts: bool,
 }
 
-/// Arguments for the HTTP server.
+// Arguments for the HTTP server.
 // #[cfg(feature = "http-server")]
-#[derive(Debug, Clone, Parser)]
-pub struct ServerArgs {
-    /// Disables the built-in HTTP server for HTML export.
-    // #[clap(long)]
-    // pub no_serve: bool,
+// #[derive(Debug, Clone, Parser)]
+// pub struct ServerArgs {
+//     /// Disables the built-in HTTP server for HTML export.
+//     // #[clap(long)]
+//     // pub no_serve: bool,
 
-    /// Disables the injected live reload script for HTML export. The HTML that
-    /// is written to disk isn't affected either way.
-    // #[clap(long)]
-    // pub no_reload: bool,
+//     /// Disables the injected live reload script for HTML export. The HTML that
+//     /// is written to disk isn't affected either way.
+//     // #[clap(long)]
+//     // pub no_reload: bool,
 
-    /// The port where HTML is served.
-    ///
-    /// Defaults to the first free port in the range 3000-3005.
-    #[clap(long)]
-    pub port: Option<u16>,
-}
+//     /// The port where HTML is served.
+//     ///
+//     /// Defaults to the first free port in the range 3000-3005.
+//     #[clap(long)]
+//     pub port: Option<u16>,
+// }
 
 macro_rules! display_possible_values {
     ($ty:ty) => {
@@ -294,42 +294,6 @@ macro_rules! display_possible_values {
             }
         }
     };
-}
-
-/// An input that is either stdin or a real path.
-#[derive(Debug, Clone)]
-pub enum Input {
-    /// Stdin, represented by `-`.
-    Stdin,
-    /// A non-empty path.
-    Path(PathBuf),
-}
-
-impl Display for Input {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Input::Stdin => f.pad("stdin"),
-            Input::Path(path) => path.display().fmt(f),
-        }
-    }
-}
-
-/// An output that is either stdout or a real path.
-#[derive(Debug, Clone)]
-pub enum Output {
-    /// Stdout, represented by `-`.
-    Stdout,
-    /// A non-empty path.
-    Path(PathBuf),
-}
-
-impl Display for Output {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Output::Stdout => f.pad("stdout"),
-            Output::Path(path) => path.display().fmt(f),
-        }
-    }
 }
 
 /// Which format to use for the generated output file.
@@ -369,33 +333,6 @@ pub enum PdfStandard {
 
 display_possible_values!(PdfStandard);
 
-/// The clap value parser used by `SharedArgs.input`
-fn input_value_parser() -> impl TypedValueParser<Value = Input> {
-    clap::builder::OsStringValueParser::new().try_map(|value| {
-        if value.is_empty() {
-            Err(clap::Error::new(clap::error::ErrorKind::InvalidValue))
-        } else if value == "-" {
-            Ok(Input::Stdin)
-        } else {
-            Ok(Input::Path(value.into()))
-        }
-    })
-}
-
-/// The clap value parser used by `CompileCommand.output`
-fn output_value_parser() -> impl TypedValueParser<Value = Output> {
-    clap::builder::OsStringValueParser::new().try_map(|value| {
-        // Empty value also handled by clap for `Option<Output>`
-        if value.is_empty() {
-            Err(clap::Error::new(clap::error::ErrorKind::InvalidValue))
-        } else if value == "-" {
-            Ok(Output::Stdout)
-        } else {
-            Ok(Output::Path(value.into()))
-        }
-    })
-}
-
 /// Parses key/value pairs split by the first equal sign.
 ///
 /// This function will return an error if the argument contains no equals sign
@@ -417,6 +354,5 @@ fn parse_source_date_epoch(raw: &str) -> Result<DateTime<Utc>, String> {
     let timestamp: i64 = raw
         .parse()
         .map_err(|err| format!("timestamp must be decimal integer ({err})"))?;
-    DateTime::from_timestamp(timestamp, 0)
-        .ok_or_else(|| "timestamp out of range".to_string())
+    DateTime::from_timestamp(timestamp, 0).ok_or_else(|| "timestamp out of range".to_string())
 }

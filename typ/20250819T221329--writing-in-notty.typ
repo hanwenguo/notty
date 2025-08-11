@@ -22,4 +22,4 @@ Every note should start with the following template:
 
 Technically, the `tags` field is optional, and the `identifier` field can be arbitrary instead of a date string. To link to other notes, use `#ln("notty:id")[text]`. To transclude other notes, use `#tr("notty:id", hide-metadata: true, open: true)`; the last two parameters are optional and values here are default values. `hide-metadata` means does not display metadata like date and author under the title, and `open` means show the content for the transcluded note when outputting to HTML. Currently, it is recommended to create hierarchy of notes only through transclusion.
 
-#tr("notty:20250819T221344", open: false)
+#tr("notty:20250819T221344", expanded: false)

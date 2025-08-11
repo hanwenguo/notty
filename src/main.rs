@@ -1,17 +1,19 @@
-mod frontend;
-mod backend;
-mod ir;
 mod args;
+mod backend;
+mod frontend;
+mod terminal;
+// mod backend;
 mod compile;
-mod serve;
+// mod frontend;
+// mod ir;
 
 use std::{cell::Cell, io, io::Write, process::ExitCode, sync::LazyLock};
 
-use clap::{error::ErrorKind, Parser};
-use codespan_reporting::term;
-use frontend::*;
-use backend::*;
 use args::*;
+// use backend::*;
+use clap::Parser;
+use codespan_reporting::term;
+// use frontend::*;
 use termcolor::WriteColor;
 use typst::diag::HintedStrResult;
 
@@ -48,7 +50,7 @@ fn dispatch() -> HintedStrResult<()> {
     match &ARGS.command {
         Command::Compile(command) => crate::compile::compile(command)?,
         // Command::Watch(command) => crate::watch::watch(&mut timer, command)?,
-        Command::Serve(command) => todo!(),
+        // Command::Serve(command) => todo!(),
         // Command::Init(command) => crate::init::init(command)?,
         // Command::Query(command) => crate::query::query(command)?,
         // Command::Fonts(command) => crate::fonts::fonts(command),
@@ -72,7 +74,7 @@ fn notty_version() -> &'static str {
 fn print_error(msg: &str) -> io::Result<()> {
     let styles = term::Styles::default();
 
-    let mut output = crate::frontend::copied::terminal::out();
+    let mut output = terminal::out();
     output.set_color(&styles.header_error)?;
     write!(output, "error")?;
 

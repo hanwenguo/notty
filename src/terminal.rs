@@ -1,4 +1,4 @@
-use std::io::{self, IsTerminal, Write};
+use std::io::{self, Write};
 
 use codespan_reporting::term::termcolor;
 use termcolor::{ColorChoice, WriteColor};
@@ -43,30 +43,7 @@ pub struct TermOut {
 }
 
 impl TermOut {
-    /// Clears the entire screen.
-    pub fn clear_screen(&mut self) -> io::Result<()> {
-        // We don't want to clear anything that is not a TTY.
-        if self.inner.stream.supports_color() {
-            let mut stream = self.inner.stream.lock();
-            // Clear the screen and then move the cursor to the top left corner.
-            write!(stream, "\x1B[2J\x1B[1;1H")?;
-            stream.flush()?;
-        }
-        Ok(())
-    }
-
-    /// Clears the previously written line.
-    pub fn clear_last_line(&mut self) -> io::Result<()> {
-        // We don't want to clear anything that is not a TTY.
-        if self.inner.stream.supports_color() {
-            // First, move the cursor up `lines` lines.
-            // Then, clear everything between the cursor to end of screen.
-            let mut stream = self.inner.stream.lock();
-            write!(stream, "\x1B[1F\x1B[0J")?;
-            stream.flush()?;
-        }
-        Ok(())
-    }
+    // Additional terminal helpers can be added here when needed.
 }
 
 impl Write for TermOut {
