@@ -145,11 +145,14 @@ Consult the `denote-file-types' for how this is used."
 (defvar denote-notty-link-in-context-regexp
   "#ln([[:blank:]]*\"denote:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)\\[\\(?2:.*?\\)\\]")
 (defvar denote-notty-transclusion-format "#tr(\"denote:%s\")")
+(defvar denote-notty-transclusion-in-context-regexp
+  "#tr([[:blank:]]*\"denote:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)")
 
 (defvar denote-notty-file-type
   `(notty
     :extension ".typ"
     :front-matter denote-notty-front-matter
+    :link-retrieval-format "\"denote:%VALUE%\""
     :link denote-notty-link-format
     :link-in-context-regexp denote-notty-link-in-context-regexp
     :title-key-regexp ,denote-notty-title-key-regexp
@@ -188,13 +191,13 @@ path.  FILE-TYPE is a symbol as described in the user option
 `denote-file-type'.  DESCRIPTION is a string.  Whether the caller treats
 the active region specially, is up to it."
   (interactive
-  (let* ((file (denote-file-prompt nil "Link to FILE")))
-    (list file current-prefix-arg)))
-  (unless (or (denote--file-type-org-extra-p)
-           (and buffer-file-name (denote-file-has-supported-extension-p buffer-file-name)))
-  (user-error "The current file type is not recognized by Denote"))
+   (let* ((file (denote-file-prompt nil "Link to FILE" nil :has-identifier)))
+     (list file)))
+  (unless (and buffer-file-name (denote-file-has-supported-extension-p buffer-file-name))
+    (user-error "The current file type is not recognized by Denote"))
   (unless (file-exists-p file)
     (user-error "The transcluded file does not exist"))
+  (denote--delete-active-region-content)
   (insert (denote-format-link file)))
 
 (defun denote-notty-backlinks-query-regexp (id)
@@ -219,15 +222,56 @@ the active region specially, is up to it."
    (literal id)
    "\""))
 
+(defun denote-notty--get-all-mention (files regexp)
+  "Return hash table of all mention in FILES by identifier using REGEXP."
+  (let* ((links-hash-table (make-hash-table :test 'equal))
+         (files-by-file-type (denote--get-files-by-file-type files))
+         (files (gethash 'notty files-by-file-type)))
+    (dolist (file files)
+      (let* ((file-identifiers
+              (with-temp-buffer
+                (insert-file-contents file)
+                (denote-link--collect-identifiers regexp))))
+        (dolist (file-identifier file-identifiers)
+          (if-let* ((links (gethash file-identifier links-hash-table)))
+              (puthash file-identifier (push file links) links-hash-table)
+            (puthash file-identifier (list file) links-hash-table)))))
+    links-hash-table))
+
+(defun denote-notty-retrieve-xref-alist-for-mention (identifier regexp)
+  "Return xref alist of absolute file paths of matches of REGEXP for IDENTIFIER."
+  (let* ((files (denote-directory-files))
+         (xref-file-name-display 'abs)
+         (xref-matches '()))
+    (when-let* ((current-all-mention
+                 (gethash identifier
+                          (denote-notty--get-all-mention files regexp)))
+                (format-parts (split-string
+                               (denote--link-retrieval-format 'notty)
+                               "%VALUE%")) ; Should give two parts
+                (query-simple (concat
+                               (regexp-quote (nth 0 format-parts))
+                               (regexp-quote identifier)
+                               (regexp-quote (nth 1 format-parts)))))
+      (setq xref-matches
+            (append xref-matches
+                    (xref-matches-in-files query-simple current-all-mention)))
+      (let ((data (xref--analyze xref-matches)))
+        (if-let* ((sort denote-query-sorting)
+                  (files-matched (mapcar #'car data))
+                  (files-sorted (denote-sort-files files-matched sort)))
+            (mapcar (lambda (x) (assoc x data)) files-sorted)
+          data)))))
+
 (defun denote-notty--contexts-get-buffer-name (file id)
   "Format a buffer name for `denote-notty-contexts'.
 Use FILE to detect a suitable title with which to name the buffer.  Else
 use the ID."
   (denote-format-buffer-name
-  (if-let* ((type (denote-filetype-heuristics file))
-              (title (denote-retrieve-front-matter-title-value file type)))
-        (format "FILE contexts for %S" title)
-    (format "FILE contexts for %s" id))
+   (if-let* ((type (denote-filetype-heuristics file))
+             (title (denote-retrieve-front-matter-title-value file type)))
+       (format "FILE contexts for %S" title)
+     (format "FILE contexts for %s" id))
    :special-buffer))
 
 ;;;###autoload
@@ -242,12 +286,13 @@ Place the buffer below the current window or wherever the user option
 `denote-notty-contexts-display-buffer-action' specifies."
   (interactive)
   (if-let* ((file buffer-file-name))
-   (when-let* ((identifier (denote-retrieve-filename-identifier-with-error file))
-               (query (denote-notty-contexts-query-regexp identifier)))
-  (funcall denote-query-links-buffer-function
-       query nil
-       (denote-notty--contexts-get-buffer-name file identifier)
-       denote-backlinks-display-buffer-action))
+      (if-let* ((identifier (denote-retrieve-filename-identifier file)))
+          (when-let* ((query (denote-notty-contexts-query-regexp identifier)))
+            (funcall denote-query-links-buffer-function
+                     query nil
+                     (denote-notty--contexts-get-buffer-name file identifier)
+                     denote-backlinks-display-buffer-action))
+        (user-error "The current file does not have a Denote identifier"))
     (user-error "Buffer `%s' is not associated with a file" (current-buffer))))
 
 (defalias 'denote-notty-show-contexts-buffer 'denote-notty-contexts
@@ -257,36 +302,31 @@ Place the buffer below the current window or wherever the user option
   "Return list of contexts in current or optional FILE.
 Also see `denote-link-return-backlinks'."
   (when-let* ((current-file (or file (buffer-file-name)))
-              (id (denote-retrieve-filename-identifier-with-error current-file)))
-    (delete current-file (denote-retrieve-files-xref-query
-                      (denote-notty-contexts-query-regexp id)))))
+              (id (or (denote-retrieve-filename-identifier current-file)
+                      (user-error "The file does not have a Denote identifier")))
+              (_ (denote-file-is-in-denote-directory-p current-file))
+              (xrefs (denote-notty-retrieve-xref-alist-for-mention
+                      id
+                      denote-notty-transclusion-in-context-regexp)))
+    (mapcar #'car xrefs)))
 
 (defun denote-notty--file-has-contexts-p (file)
   "Return non-nil if FILE has contexts."
-  (not (zerop (length (denote-notty-link-return-contexts file)))))
+  (not (zerop (length (denote-notty-get-contexts file)))))
 
 ;;;###autoload
 (defun denote-notty-find-context ()
   "Use minibuffer completion to visit context to current file.
-Alo see `denote-find-backlink'."
-  (declare (interactive-only t))
-  (interactive)
-  (find-file
-  (denote-get-path-by-id
-   (denote-extract-id-from-string
-    (denote-select-linked-file-prompt
-       (or (denote-notty-get-contexts)
-           (user-error "No context found")))))))
-;;;###autoload
-(defun denote-notty-find-context ()
-  "Use minibuffer completion to visit transcluding parent to current file.
 Visit the file itself, not the location where the link is.  For a
 context-sensitive operation, use `denote-notty-find-context-with-location'.
 
 Alo see `denote-find-link'."
   (declare (interactive-only t))
   (interactive)
-  (when-let* ((links (or (denote-notty-get-contexts)
+  (when-let* ((current-file buffer-file-name)
+              (_ (or (denote-retrieve-filename-identifier current-file)
+                     (user-error "The current file does not have a Denote identifier")))
+              (links (or (denote-notty-get-contexts current-file)
                          (user-error "No contexts found")))
               (selected (denote-select-from-files-prompt links "Select among CONTEXTS")))
     (find-file selected)))
@@ -297,7 +337,8 @@ Alo see `denote-find-link'."
   (declare (interactive-only t))
   (interactive)
   (when-let* ((current-file buffer-file-name)
-              (id (denote-retrieve-filename-identifier-with-error current-file))
+              (id (or (denote-retrieve-filename-identifier current-file)
+                      (user-error "The current file does not have a Denote identifier")))
               (query (denote-notty-contexts-query-regexp id))
               (files (denote-directory-files nil :omit-current :text-only))
               (fetcher (lambda () (xref-matches-in-files query files))))
@@ -315,21 +356,29 @@ Place the buffer below the current window or wherever the user option
 `denote-backlinks-display-buffer-action' specifies."
   (interactive)
   (if-let* ((file buffer-file-name))
-   (when-let* ((identifier (denote-retrieve-filename-identifier-with-error file))
-              (query (denote-notty-backlinks-query-regexp identifier)))
-  (funcall denote-query-links-buffer-function
-        query nil
-        (denote--backlinks-get-buffer-name file identifier)
-        denote-backlinks-display-buffer-action))
+      (if-let* ((identifier (denote-retrieve-filename-identifier file)))
+          (when-let* ((query (denote-notty-backlinks-query-regexp identifier)))
+            (funcall denote-query-links-buffer-function
+                     query nil
+                     (denote--backlinks-get-buffer-name file identifier)
+                     denote-backlinks-display-buffer-action))
+        (user-error "The current file does not have a Denote identifier"))
     (user-error "Buffer `%s' is not associated with a file" (current-buffer))))
+
+(defalias 'denote-notty-show-backlinks-buffer 'denote-notty-backlinks
+  "Alias for `denote-notty-backlinks' command.")
 
 (defun denote-notty-get-backlinks (&optional file)
   "Return list of backlinks in current or optional FILE.
 Also see `denote-get-links'."
   (when-let* ((current-file (or file (buffer-file-name)))
-              (id (denote-retrieve-filename-identifier-with-error current-file)))
-    (delete current-file (denote-retrieve-files-xref-query
-                      (denote-notty-backlinks-query-regexp id)))))
+              (id (or (denote-retrieve-filename-identifier current-file)
+                      (user-error "The file does not have a Denote identifier")))
+              (_ (denote-file-is-in-denote-directory-p current-file))
+              (xrefs (denote-notty-retrieve-xref-alist-for-mention
+                      id
+                      denote-notty-link-in-context-regexp)))
+    (mapcar #'car xrefs)))
 
 ;;;###autoload
 (defun denote-notty-find-backlink ()
@@ -340,7 +389,10 @@ context-sensitive operation, use `denote-find-backlink-with-location'.
 Alo see `denote-find-link'."
   (declare (interactive-only t))
   (interactive)
-  (when-let* ((links (or (denote-notty-get-backlinks)
+  (when-let* ((current-file buffer-file-name)
+              (_ (or (denote-retrieve-filename-identifier current-file)
+                     (user-error "The current file does not have a Denote identifier")))
+              (links (or (denote-notty-get-backlinks current-file)
                          (user-error "No backlinks found")))
               (selected (denote-select-from-files-prompt links "Select among BACKLINKS")))
     (find-file selected)))
@@ -351,7 +403,8 @@ Alo see `denote-find-link'."
   (declare (interactive-only t))
   (interactive)
   (when-let* ((current-file buffer-file-name)
-              (id (denote-retrieve-filename-identifier-with-error current-file))
+              (id (or (denote-retrieve-filename-identifier current-file)
+                      (user-error "The current file does not have a Denote identifier")))
               (query (denote-notty-backlinks-query-regexp id))
               (files (denote-directory-files nil :omit-current :text-only))
               (fetcher (lambda () (xref-matches-in-files query files))))
