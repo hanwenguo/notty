@@ -60,7 +60,7 @@
   let dest = it.dest
   if type(dest) == str and dest.starts-with("denote:") {
     let identifier = dest.slice(7)
-    let new-dest = site.config.base-url + site.config.root-path + "pdf/" + identifier + ".pdf"
+    let new-dest = site.config.base-url + site.config.root-path + "/pdf/" + identifier + ".pdf"
     underline(stroke: (dash: "dotted"), link(new-dest, it.body))
   } else {
     underline(it)
