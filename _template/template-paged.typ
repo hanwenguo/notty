@@ -3,12 +3,8 @@
 
 #let _no-numbering = sys.inputs.at("no-numbering", default: none) != none
 
-#let sans-fonts = ("IBM Plex Sans", "IBM Plex Sans SC")
-#let serif-fonts = ("IBM Plex Serif", "FZShuSong-Z01")
-#let serif-italic-fonts = (
-  "IBM Plex Serif",
-  "Zhuque Fangsong (technical preview)",
-)
+#let sans-fonts = site.config.pdf-sans-fonts
+#let serif-fonts = site.config.pdf-serif-fonts
 
 #let _default-metadata(date, identifier, ..attrs) = {
   let author = attrs.at("author", default: site.config.default-author.name)
@@ -43,7 +39,10 @@
   let taxon = attrs.at("taxon", default: none)
   let author = attrs.at("author", default: site.config.default-author.name)
   heading(depth: 1, {
-    if taxon != none { taxon }
+    if taxon != none {
+      set text(style: "italic")
+      taxon
+    }
     context if counter("transclusion-depth").get().at(0) != 0 {
       counter(heading).step(level: counter("transclusion-depth").get().at(0))
     }
@@ -79,8 +78,8 @@
   set page(
     paper: "us-letter",
     margin: (
-      left: 1in,
-      right: 1in,
+      left: 1.5in,
+      right: 1.5in,
       top: 1.5in,
       bottom: 1.5in,
     ),
@@ -103,7 +102,6 @@
     hyphenate: true,
     size: 11pt,
   )
-  show text.where(style: "italic"): set text(font: serif-italic-fonts)
 
   set math.equation(numbering: "(1)")
   show math.equation: set block(spacing: 0.65em)
@@ -125,24 +123,24 @@
   }
 
   show heading.where(depth: 2): it => {
-    v(2em, weak: true)
-    text(size: 14pt, weight: "bold", it)
+    v(1.3em, weak: true)
+    text(size: 14pt, weight: "bold", font: sans-fonts, it)
     v(1em, weak: true)
   }
 
   show heading.where(depth: 3): it => {
     v(1.3em, weak: true)
-    text(size: 13pt, weight: "regular", style: "italic", it)
+    text(size: 13pt, weight: "regular", font: sans-fonts, it)
     v(1em, weak: true)
   }
 
   show heading.where(depth: 4): it => {
     v(1em, weak: true)
-    text(size: 11pt, style: "italic", weight: "thin", it)
+    text(size: 11pt, weight: "light", font: sans-fonts, it)
     v(0.65em, weak: true)
   }
 
-  set par(leading: 0.65em, first-line-indent: 1em, spacing: 0.65em)
+  set par(leading: 0.65em, first-line-indent: 0em, spacing: 1.3em)
 
   show link: handle-denote-link
 
@@ -256,7 +254,6 @@
     hyphenate: true,
     size: 11pt,
   )
-  show text.where(style: "italic"): set text(font: serif-italic-fonts)
 
   set math.equation(numbering: "(1)")
   show math.equation: set block(spacing: 0.65em)
