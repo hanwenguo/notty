@@ -31,7 +31,7 @@
 (require 'denote)
 
 (defvar denote-notty-front-matter
-  "#import \"/_template/template.typ\": template, tr
+  "#import \"/_template/template.typ\": template, tr, ln
 #show: template(
   title:      %s,
   date:       %s,
@@ -100,13 +100,13 @@ Consult the `denote-file-types' for how this is used."
     ""))
 
 (defmacro denote-notty--define-retrieve-date (field)
-  "Define a function to retrive FIELD of a Typst datetime expression."
+  "Define a function to retrieve FIELD of a Typst datetime expression."
   (declare (indent 1))
   `(defun ,(intern (format "denote-notty--retrieve-date-%s" field)) (date-string)
      (string-match ,(format "%s\\s-*:\\s-*\\([[:digit:]]+\\)\\s-*\\(,\\|)\\)" field)
                    date-string)
      (let ((matched (match-string 1 date-string)))
-        matched)))
+       matched)))
 
 (denote-notty--define-retrieve-date year)
 (denote-notty--define-retrieve-date month)
@@ -117,20 +117,20 @@ Consult the `denote-file-types' for how this is used."
 
 (defun denote-notty--extract-date-from-front-matter (date-string)
   "Extract date object from front matter DATE-STRING."
-  (let ((year (denote-notty--retrive-date-year date-string))
-        (month (denote-notty--retrive-date-month date-string))
-        (day (denote-notty--retrive-date-day date-string))
-        (hour (denote-notty--retrive-date-hour date-string))
-        (minute (denote-notty--retrive-date-minute date-string))
-        (second (denote-notty--retrive-date-second date-string)))
+  (let ((year (denote-notty--retrieve-date-year date-string))
+        (month (denote-notty--retrieve-date-month date-string))
+        (day (denote-notty--retrieve-date-day date-string))
+        (hour (denote-notty--retrieve-date-hour date-string))
+        (minute (denote-notty--retrieve-date-minute date-string))
+        (second (denote-notty--retrieve-date-second date-string)))
     (if (and year month day hour minute second)
-       (encode-time
-       (string-to-number second)
-       (string-to-number minute)
-       (string-to-number hour)
-       (string-to-number day)
-       (string-to-number month)
-       (string-to-number year)))))
+        (encode-time
+         (string-to-number second)
+         (string-to-number minute)
+         (string-to-number hour)
+         (string-to-number day)
+         (string-to-number month)
+         (string-to-number year)))))
 
 (defun denote-notty-extract-date-from-front-matter (date-string)
   "Extract date object from front matter DATE-STRING.
@@ -144,9 +144,9 @@ Consult the `denote-file-types' for how this is used."
 (defvar denote-notty-link-format "#ln(\"denote:%s\")[%s]")
 (defvar denote-notty-link-in-context-regexp
   "#ln([[:blank:]]*\"denote:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)\\[\\(?2:.*?\\)\\]")
-(defvar denote-notty-transclusion-format "#tr(\"denote:%s\")")
+(defvar denote-notty-transclusion-format "#tr(\"denote:%s\"")
 (defvar denote-notty-transclusion-in-context-regexp
-  "#tr([[:blank:]]*\"denote:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)")
+  "#tr([[:blank:]]*\"denote:\\(?1:[^\"()]+?\\)\"")
 
 (defvar denote-notty-file-type
   `(notty
@@ -179,12 +179,22 @@ Consult the `denote-file-types' for how this is used."
      identifier)))
 
 ;;;###autoload
-(defun denote-notty-transclude (file)
-  "Create transclusion to FILE note in variable `denote-directory'.
+(defun denote-notty-transclude (file &optional id-only)
+  "Create transclusion to FILE in variable `denote-directory' with DESCRIPTION.
 
-When called interactively, prompt for FILE using completion.  In this
-case, derive FILE-TYPE from the current buffer.  FILE-TYPE is used to
-determine the format of the link.
+When called interactively, prompt for FILE using completion.
+
+Return the DESCRIPTION of the link in the format specified by
+`denote-link-description-format'.  The default is to return the text of
+the active region or the title of the note (plus the signature if
+present).
+
+With optional ID-ONLY as a non-nil argument, such as with a universal
+prefix (\\[universal-argument]), insert links with just the identifier
+and no further description.  In this case, the link format is always
+[[denote:IDENTIFIER]].
+
+If the DESCRIPTION is empty, format the link the same as with ID-ONLY.
 
 When called from Lisp, FILE is a string representing a full file system
 path.  FILE-TYPE is a symbol as described in the user option
@@ -192,13 +202,15 @@ path.  FILE-TYPE is a symbol as described in the user option
 the active region specially, is up to it."
   (interactive
    (let* ((file (denote-file-prompt nil "Link to FILE" nil :has-identifier)))
-     (list file)))
-  (unless (and buffer-file-name (denote-file-has-supported-extension-p buffer-file-name))
+     (list file current-prefix-arg)))
+  (unless (or (denote--file-type-org-extra-p)
+              (and buffer-file-name (denote-file-has-supported-extension-p buffer-file-name)))
     (user-error "The current file type is not recognized by Denote"))
   (unless (file-exists-p file)
-    (user-error "The transcluded file does not exist"))
+    (user-error "The linked file does not exist"))
   (denote--delete-active-region-content)
-  (insert (denote-format-link file)))
+  (insert (format denote-notty-transclusion-format
+                  (denote-retrieve-filename-identifier file))))
 
 (defun denote-notty-backlinks-query-regexp (id)
   "Return a regexp to query contexts of file with ID."
