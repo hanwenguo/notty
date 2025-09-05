@@ -1,8 +1,8 @@
 #let config = (
   name: "Site Name",
-  description: "Site Description",
-  base-url: "https://example.com",
-  root-path: "", // use "" if you want to serve from the root
+  description: "Notty",
+  base-url: "https://hanwen.io",
+  root-path: "/notty", // use "" if you want to serve from the root
   lang: "en",
   default-author: (
     name: "John Doe",

@@ -26,7 +26,7 @@ TYPST_EXE = "typst"
 TYPST_SUBCOMMAND = "compile"
 
 TYPST_DIR = ROOT_DIR / "typ"
-HTML_DIR = ROOT_DIR / "html"
+HTML_DIR = ROOT_DIR / "docs"
 PDF_DIR = HTML_DIR / "pdf"
 PUBLIC_DIR = ROOT_DIR / "public"
 TEMPLATES_DIR = ROOT_DIR / "_template"
@@ -113,11 +113,11 @@ def get_id_to_path_map() -> dict[str, str]:
     results_maybe_duplicated = [line.split("\x00") for line in raw_result if line]
     results_maybe_duplicated.reverse() # Reverse to keep the first found
     results = {item[0]: item[1] for item in results_maybe_duplicated}
-    
+
     for path, id in results.items():
         path = Path(path).relative_to(ROOT_DIR)
         id_to_path[id] = f"/{str(path)}"
-        
+
     return id_to_path
 
 def write_id_to_path_map():
@@ -305,12 +305,12 @@ def build_html():
                     raw_title = title_match.group(1).strip()
                     # Remove any HTML tags from the title for the <title> element
                     title = re.sub(r'<[^>]+>', '', raw_title).strip()
-                    
+
             id = get_identifier_from_path(source_file)
             if id == "index":
                 # remove <header> from shell_template_content
                 shell_template_content = re.sub(r"<header[^>]*>.*?</header>", "", shell_template_content, flags=re.DOTALL | re.IGNORECASE)
-                
+
             if extracted_content:
                 backmatters_cmd = [
                     TYPST_EXE,
@@ -394,7 +394,7 @@ def build_pdf():
                 print(f"Warning: Typst produced no output for {source_file.name}")
                 continue
             result_pdf = PdfReader(result_bytes)
-            
+
             merger = PdfWriter()
             merger.append(result_pdf)
             backmatters_cmd = [
