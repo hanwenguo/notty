@@ -141,18 +141,18 @@ Consult the `denote-file-types' for how this is used."
       nil
      (denote-notty--extract-date-from-front-matter date-string))))
 
-(defvar denote-notty-link-format "#ln(\"denote:%s\")[%s]")
+(defvar denote-notty-link-format "#ln(\"notty:%s\")[%s]")
 (defvar denote-notty-link-in-context-regexp
-  "#ln([[:blank:]]*\"denote:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)\\[\\(?2:.*?\\)\\]")
-(defvar denote-notty-transclusion-format "#tr(\"denote:%s\"")
+  "#ln([[:blank:]]*\"notty:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)\\[\\(?2:.*?\\)\\]")
+(defvar denote-notty-transclusion-format "#tr(\"notty:%s\"")
 (defvar denote-notty-transclusion-in-context-regexp
-  "#tr([[:blank:]]*\"denote:\\(?1:[^\"()]+?\\)\"")
+  "#tr([[:blank:]]*\"notty:\\(?1:[^\"()]+?\\)\"")
 
 (defvar denote-notty-file-type
   `(notty
     :extension ".typ"
     :front-matter denote-notty-front-matter
-    :link-retrieval-format "\"denote:%VALUE%\""
+    :link-retrieval-format "\"notty:%VALUE%\""
     :link denote-notty-link-format
     :link-in-context-regexp denote-notty-link-in-context-regexp
     :title-key-regexp ,denote-notty-title-key-regexp
@@ -217,7 +217,7 @@ the active region specially, is up to it."
   (rx
    "#ln("
    (zero-or-more blank)
-   "\"denote:"
+   "\"notty:"
    (literal id)
    "\""
    (zero-or-more blank)
@@ -230,7 +230,7 @@ the active region specially, is up to it."
    (zero-or-more blank)
    "#tr("
    (zero-or-more blank)
-   "\"denote:"
+   "\"notty:"
    (literal id)
    "\""))
 

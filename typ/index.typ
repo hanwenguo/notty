@@ -6,4 +6,4 @@
   identifier: "index",
 )
 
-This site is built with #ln("denote:20250619T223048")[Notty].
+This site is built with #ln("notty:20250619T223048")[Notty].

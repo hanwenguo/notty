@@ -203,8 +203,8 @@
 
 #let ln(dest, body) = {
   if type(dest) == str {
-    if dest.starts-with("denote:") {
-      let identifier = dest.slice(7)
+    if dest.starts-with("notty:") {
+      let identifier = dest.slice(6)
       let new-dest = identifier + ".html"
       span(a(body, attrs: (href: site.config.root-path + "/" + new-dest)), class: ("link", "local"))
     }
@@ -212,8 +212,8 @@
 }
 
 #let tr(url, hide-metadata: true, open: true) = {
-  if url.starts-with("denote:") {
-    let identifier = url.slice(7)
+  if url.starts-with("notty:") {
+    let identifier = url.slice(6)
     let path = site.id-to-path(identifier)
     transclude(
       path,

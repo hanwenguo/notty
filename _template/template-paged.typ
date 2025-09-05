@@ -57,8 +57,8 @@
 
 #let handle-denote-link(it) = {
   let dest = it.dest
-  if type(dest) == str and dest.starts-with("denote:") {
-    let identifier = dest.slice(7)
+  if type(dest) == str and dest.starts-with("notty:") {
+    let identifier = dest.slice(6)
     let new-dest = site.config.base-url + site.config.root-path + "/pdf/" + identifier + ".pdf"
     underline(stroke: (dash: "dotted"), link(new-dest, it.body))
   } else {
@@ -192,8 +192,8 @@
 #let ln(dest, body) = link(dest, body)
 // {
 //   if type(dest) == str {
-//     if dest.starts-with("denote:") {
-//       let identifier = dest.slice(7)
+//     if dest.starts-with("notty:") {
+//       let identifier = dest.slice(6)
 //       let new-dest = site.config.base-url + "pdf/" + identifier + ".pdf"
 //       link(new-dest, it.body)
 //     }
@@ -201,8 +201,8 @@
 // }
 
 #let tr(url, hide-metadata: true, open: true, heading-offset: 1) = {
-  if url.starts-with("denote:") {
-    let identifier = url.slice(7)
+  if url.starts-with("notty:") {
+    let identifier = url.slice(6)
     let path = site.id-to-path(identifier)
     let fmc-func = if open {
       _find-main-content
