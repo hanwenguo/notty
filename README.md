@@ -2,6 +2,8 @@
 
 This is a working example for taking notes in the spirit of [Forester](https://www.forester-notes.org/index/index.xml) in [Typst](https://github.com/typst/typst).
 
+For a more detailed document, see this [online demo](https://hanwenguo.github.io/notty/20250619T223048.html).
+
 ## Usage
 
 You need to have [Typst](https://github.com/typst/typst) and [uv](https://docs.astral.sh/uv/) and [rg](https://github.com/BurntSushi/ripgrep) installed.
@@ -54,4 +56,4 @@ Kodama is a similar project that uses Typst and Markdown to manage notes. The ma
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0. 
+This project is licensed under the GNU General Public License v3.0.
