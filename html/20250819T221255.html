@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>How to set up Notty</title>
+        <link rel="stylesheet" href="/css/forester.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&amp;display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@700&amp;display=swap" rel="stylesheet">
+</head>
+<body>
+    
+    <div id="grid-wrapper">
+        <article>
+            <section lang="en" class="block"><details open=""><summary><header><h1><span class="taxon"></span>How to set up Notty<a href="/20250819T221255.html" class="slug">[20250819T221255]</a></h1><div class="metadata"><ul><li class="meta-item">August 19, 2025</li><li class="meta-item"><span class="link"><a href="/pdf/20250819T221255.pdf">PDF</a></span></li></ul></div></header></summary><p>As for now, Notty is essentially the combination of a set of Typst templates and a build script written in Python. So, there is no real installation — one just clones the <span class="link external"><a href="https://github.com/hanwenguo/notty">repository of Notty</a></span> as a starter template, edit the site configuration and maybe the template, and write their own notes.</p><pre>git clone https://github.com/hanwenguo/notty.git<br>chmod +x build.py<br>./build.py --help</pre><p>The build script is intended to be executed directly with execution permission like above instead of by <code>python build.py</code>. You must have <span class="link external"><a href="https://github.com/typst/typst">Typst</a></span>, <span class="link external"><a href="https://docs.astral.sh/uv/">uv</a></span> and <span class="link external"><a href="https://github.com/BurntSushi/ripgrep">ripgrep</a></span> installed on your machine to run the build script like that.</p><p>After cloning, you would see the following structure.</p><pre>notty/<br>├── _template/     # Typst templates of Notty<br>│   ├── site.typ   # Site configuration<br>│   └── ...        # Other templates<br>├── public/        # Resource files to be copied to output directory<br>│   └── ...<br>├── html/          # Default output directory for HTML files<br>│   ├── ...<br>│   └── pdf/       # Default output directory for PDF files<br>│       └── ...<br>├── typ/           # Note files in Typst<br>│   └── ...<br>└── build.py       # The build script</pre><p>All of the above directories is the default configuration, which can be overridden by editing the corresponding constants at the beginning of <code>build.py</code>. Particularly, the output directories for HTML and PDF files are independent. Thus, for example, you can put them both into a <code>dist</code> directory at the same level. That they are nested by default is just because of my personal preference.</p><p>You should also look at <code>site.typ</code> to check possible configuration options.</p></details></section>
+        </article>
+    </div>
+</body>
+</html>

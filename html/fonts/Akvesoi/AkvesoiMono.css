@@ -1,0 +1,630 @@
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Thin.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Thin.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedThin.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedThin.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ThinOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ThinOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ThinOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ThinOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedThinOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedThinOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedThinOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedThinOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ThinItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ThinItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 100;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedThinItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedThinItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraLight.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraLight.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraLight.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraLight.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraLightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraLightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraLightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraLightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraLightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraLightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraLightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraLightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraLightItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraLightItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 200;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraLightItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraLightItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Light.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Light.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedLight.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedLight.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-LightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-LightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-LightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-LightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedLightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedLightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedLightOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedLightOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-LightItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-LightItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 300;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedLightItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedLightItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Regular.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Regular.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Extended.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Extended.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Oblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Oblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Oblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Oblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Italic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Italic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 400;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Medium.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Medium.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedMedium.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedMedium.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-MediumOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-MediumOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-MediumOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-MediumOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedMediumOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedMediumOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedMediumOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedMediumOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-MediumItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-MediumItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 500;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedMediumItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedMediumItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-SemiBold.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-SemiBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedSemiBold.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedSemiBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-SemiBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-SemiBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-SemiBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-SemiBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedSemiBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedSemiBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedSemiBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedSemiBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-SemiBoldItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-SemiBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 600;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedSemiBoldItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedSemiBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Bold.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Bold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedBold.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-BoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-BoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-BoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-BoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-BoldItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-BoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 700;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedBoldItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraBold.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraBold.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraBoldOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraBoldOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtraBoldItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtraBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 800;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedExtraBoldItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedExtraBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: normal;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-Heavy.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-Heavy.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: expanded;
+	font-style: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedHeavy.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedHeavy.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: normal;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-HeavyOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-HeavyOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: normal;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-HeavyOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-HeavyOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: expanded;
+	font-style: oblique;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedHeavyOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedHeavyOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web Oblique';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: expanded;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedHeavyOblique.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedHeavyOblique.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: normal;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-HeavyItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-HeavyItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Akvesoi Mono Web';
+	font-display: swap;
+	font-weight: 900;
+	font-stretch: expanded;
+	font-style: italic;
+	src: url('/fonts/Akvesoi/WOFF2/AkvesoiMono-ExtendedHeavyItalic.woff2') format('woff2'), url('/fonts/Akvesoi/TTF/AkvesoiMono-ExtendedHeavyItalic.ttf') format('truetype');
+}

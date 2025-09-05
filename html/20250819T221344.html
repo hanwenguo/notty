@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>Use Emacs denote package to write in Notty</title>
+        <link rel="stylesheet" href="/css/forester.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&amp;display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@700&amp;display=swap" rel="stylesheet">
+</head>
+<body>
+    
+    <div id="grid-wrapper">
+        <article>
+            <section lang="en" class="block"><details open=""><summary><header><h1><span class="taxon"></span>Use Emacs denote package to write in Notty<a href="/20250819T221344.html" class="slug">[20250819T221344]</a></h1><div class="metadata"><ul><li class="meta-item">August 19, 2025</li><li class="meta-item"><span class="link"><a href="/pdf/20250819T221344.pdf">PDF</a></span></li></ul></div></header></summary><p>If you use Emacs, Notty is accompanied by an Emacs Lisp package providing the integration of Notty and the <span class="link external"><a href="https://protesilaos.com/emacs/denote">Denote</a></span> package. The following is an example of configuration.</p><pre>(use-package denote<br>  :bind (("C-c n n" . denote))<br>  :config<br>  (setq denote-directory (expand-file-name "~/Documents/notes/typ/")))<br><br>(use-package typst-ts-mode)<br><br>(use-package denote-notty<br>  :load-path "/path/to/notty/directory/"<br>  :after (denote typst-ts-mode)<br>  :demand t<br>  :bind (:map typst-ts-mode-map<br>         ("C-c n b" . denote-notty-backlinks)<br>         ("C-c n c" . denote-notty-contexts)<br>         ("C-c n t" . denote-notty-transclude)<br>         ("C-c n l" . denote-link)<br>         ("C-c n L" . denote-add-links)<br>         ("C-c n q c" . denote-query-contents-link) ; create link that triggers a grep<br>         ("C-c n q f" . denote-query-filenames-link) ; create link that triggers a dired<br>         ;; Note that `denote-rename-file' can work from any context, not just<br>         ;; Dired bufffers.  That is why we bind it here to the `global-map'.<br>         ("C-c n r" . denote-rename-file)<br>         ("C-c n R" . denote-rename-file-using-front-matter))<br>  :config<br>  (push denote-notty-file-type denote-file-types)<br>  (defun +denote-sluggify-signature (str)<br>    "Make STR an appropriate slug but allowing uppercase letters."<br>    (denote-slug-put-equals<br>     (replace-regexp-in-string "[][{}!@#$%^&amp;*()+'\"?,.\|;:~`‘’“”/-]*" "" str)))<br>  (setq denote-file-name-slug-functions<br>        '((title . denote-sluggify-title)<br>          (signature . +denote-sluggify-signature)<br>          (keyword . denote-sluggify-keyword))))</pre></details></section>
+        </article>
+    </div>
+</body>
+</html>
