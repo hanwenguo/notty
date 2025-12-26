@@ -40,7 +40,6 @@
   body,
   identifier: none,
   title: none,
-  date: none,
   ..attrs,
 ) = {
   html.section(
@@ -54,13 +53,12 @@
               html.span(class: "taxon", attrs.at("taxon") + ". ")
             }
             title
-            html.a(class: "slug", href: "/" + identifier + ".html", "[" + identifier + "]")
+            if identifier != none {
+              html.a(class: "slug", href: "/" + identifier + ".html", "[" + identifier + "]")
+            }
           })
           html.div(class: "metadata", {
             html.ul({
-              if date != none {
-                html.li(class: "meta-item", date.display("[year]-[month]-[day] [hour]:[minute]:[second]"))
-              }
             })
           })
         }))

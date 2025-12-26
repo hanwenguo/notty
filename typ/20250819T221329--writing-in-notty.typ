@@ -6,20 +6,23 @@
   identifier: "20250819T221329",
 )
 
-Every note should start with the following template:
+Notty works by exporting your notes written in Typst format to HTML using the HTML export feature of Typst, then post-processing the exported HTML files to create a website. Therefore, writing notes in Notty is essentially writing Typst documents with some conventions. For a demonstration of these conventions, see the #link("https://github.com/hanwenguo/notty")[repository of Notty] itself.
 
-```typst
-#import "/_template/template.typ": template, tr, ln
-#show: template(
-  title:      [Title],
-  date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 29),
-  tags:       (),
-  identifier: "20250819T221329",
-)
+More specifically, Notty will first export each note in the input directory to an HTML file. This does not involve any special processing; the Typst files are compiled as-is, and user is responsible for generating HTML files with the Notty conventions described below. The generated HTML files is not used for display directly, but rather as an intermediate representation for further processing.
 
-# the content
-```
+The `<head>` section of the generated HTML files may include metadata `<meta>` tags as well as other standard tags such as `<title>`, `<link>`, `<style>`, or `<script>`. Out of the `<meta>` tags, Notty recognizes a special one: `<meta name="identifier" content="...">`: specifies the unique identifier of the note. This is required for every note.
 
-Technically, the `tags` field is optional, and the `identifier` field can be arbitrary instead of a date string. To link to other notes, use `#ln("notty:id")[text]`. To transclude other notes, use `#tr("notty:id", hide-metadata: true, open: true)`; the last two parameters are optional and values here are default values. `hide-metadata` means does not display metadata like date and author under the title, and `open` means show the content for the transcluded note when outputting to HTML. Currently, it is recommended to create hierarchy of notes only through transclusion.
+In the HTML files, there could be two special custom elements: `<notty-transclusion target="notty:..." show-metadata="..." expanded="..."></notty-transclusion>` and `<notty-internal-link target="notty:...">...</notty-internal-link>`. The former is used to represent transcluded notes, while the latter is used for internal links between notes. For `<notty-transclusion>`, its body must be empty; the `target` attribute, starting with `notty:`, specifies the ID (not including the `notty:` prefix) of the note to be transcluded, while `show-metadata` and `expanded` are boolean attributes that control the display of metadata and whether the transclusion is expanded by default, respectively; due to limitations in Typst's HTML export capabilities, their values are represented as strings ("true" or "false"). For `<notty-internal-link>`, the `target` attribute specifies the ID of the note to link to, and its body contains the link text.
+
+Notty then post-processes the intermediate HTML files to produce the final HTML files with all transclusions and internal links resolved and backmatter generated. The generated HTML files are placed in an output directory, with each note's HTML file named after its ID (e.g., a note with ID `note-123` is saved as `note-123.html`). The directory structure of these notes should be flat, i.e., all notes are placed directly under the output directory without any subdirectories.
+
+The detailed process is as follows:
+
+1. Parse the HTML files to build a transclusion graph with respect to the `<notty-transclusion>` elements.
+2. Process the notes in topological order. For each note, the aforementioned custom elements are replaced with the actual content they represent. For `<notty-internal-link>`, it is replaced with an `<a>` element that links to the target note's HTML file. For `<notty-transclusion>`, it is replaced by the content of the `<body>` of the target note's final HTML file. Since the notes are processed in topological order, the target note should have already been processed when processing the current note. If `show-metadata` is false, the outermost tag of the transcluded content is appended with class `hide-metadata`. If `expanded` is false, the outermost `<details>` tag (might be nested) of the transcluded content will have the `open` attribute removed. After this step, there should be no remaining custom elements in any note.
+3. After all transclusions and internal links have been resolved, backlinks and contexts are generated for each note. A backlink from note A to note B exists if note B links to note A via an internal link. A context for note A is defined as any note that directly transcludes note A. The contents of the backlinks and contexts (and generally, any backmatter section) are created by transcluding a virtual note that in turn transcludes all relevant notes. These virtual notes do not exist as actual files, but are constructed on-the-fly during backend processing, and this wouldn't affect the transclusion graph. After this step, a set of backmatter sections is obtained for each note.
+4. Finally, the final HTML file for each note will be constructed. There will be a template HTML file that defines the overall structure of the final HTML files, placed in `_template/template.html`. The content of each note replaces the `<slot name="content"></slot>` of the template, while the generated backmatter sections replace the `<slot name="backmatters"></slot>`. (The use of `<slot>` here is just a placeholder because of the name of the tag; no actual Web Components functionality is involved.) Also, any tags in the `<head>` section of the note's HTML file will be appended to the `<head>` section of the template. Template conditionals can be expressed with `<template id="...">` blocks: if the intermediate HTML contains a `<meta name="hide:ID">` tag, the corresponding template block is omitted; otherwise the `<template>` tag is replaced by its content. The resulting HTML file will be saved as the final output for the note.
+
+After the above processing, the output directory will contain the final HTML files for all notes, with all transclusions and internal links resolved, and backmatter generated.
 
 #tr("notty:20250819T221344", expanded: false)

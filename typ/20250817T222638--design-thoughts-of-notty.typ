@@ -1,4 +1,4 @@
-#import "/_template/template.typ": template, tr
+#import "/_template/template.typ": template, tr, ln, notty-section
 #show: template(
   title:      [Design thoughts of Notty],
   date:       datetime(year: 2025, month: 08, day: 17, hour: 22, minute: 26, second: 38),
@@ -8,18 +8,12 @@
 
 There are already a bunch of great software exploring the possibilities of taking scientific notes. However, Notty tries to be different, and takes its own approach towards that goal. These differences reflect some thoughts behind the design of Notty.
 
-// === Scientific notes should approach atomicity
-
-// It is already a trend to take so-called “atomic” notes in the “Zettelkasten” manner in order to reduce the size of the context to load into mind. As argued by #link("https://www.jonmsterling.com/")[Jon Sterling] (#link("https://www.forester-notes.org/tfmt-0007/")[Atomicity of scientific notes]), this is particularly relevant for scientific topics, since one often needs to grasp the precise meaning of all concepts mentioned in one note, thus putting it into a large context. The more atomic a note is, the easier 
-
-// ==== Relative hierarchy of notes helps improve atomicity
-
-// a
-
-// ==== Explicit hierarchy of notes helps improve atomicity
-
-// a
-
 #tr("notty:20250819T220636")
 
-#tr("notty:20250819T220701")
+#notty-section(
+  title:      [Alternative choices for scientific notes],
+  date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 07, second: 01),
+  tags:       (),
+)[
+There are other tools designed for taking notes about scientific thoughts, just like how #ln("notty:20250819T220636")[Typst finds a sweet spot for taking scientific notes]. The most amazing one is #link("https://www.forester-notes.org/index/index.xml")[Forester]. Anyone who is interested in that topic should look into it. 
+]

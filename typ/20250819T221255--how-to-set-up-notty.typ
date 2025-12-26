@@ -6,34 +6,26 @@
   identifier: "20250819T221255",
 )
 
-As for now, Notty is essentially the combination of a set of Typst templates and a build script written in Python. So, there is no real installation --- one just clones the #link("https://github.com/hanwenguo/notty")[repository of Notty] as a starter template, edit the site configuration and maybe the template, and write their own notes.
+Notty is implemented in Rust. To set up Notty on your local machine, you can either install using `cargo`:
 
 ```sh
-git clone https://github.com/hanwenguo/notty.git
-chmod +x build.py
-./build.py --help
+cargo install --git https://github.com/hanwenguo/notty
 ```
 
-The build script is intended to be executed directly with execution permission like above instead of by `python build.py`. You must have #link("https://github.com/typst/typst")[Typst], #link("https://docs.astral.sh/uv/")[uv] and #link("https://github.com/BurntSushi/ripgrep")[ripgrep] installed on your machine to run the build script like that.
+Or download the prebuilt binary from the #link("https://github.com/hanwenguo/notty/releases")[releases page].
 
-After cloning, you would see the following structure.
+Notty uses a simple project structure to organize your notes and resources. Say you have a directory called `notes/` to store all your notes. Usually, you would want to have a structure like this:
 
 ```plain
-notty/
+notes/
 ├── _template/     # Typst templates of Notty
-│   ├── site.typ   # Site configuration
-│   └── ...        # Other templates
+│   └── ...
 ├── public/        # Resource files to be copied to output directory
 │   └── ...
-├── html/          # Default output directory for HTML files
-│   ├── ...
-│   └── pdf/       # Default output directory for PDF files
-│       └── ...
-├── typ/           # Note files in Typst
+├── dist/          # Default output directory
 │   └── ...
-└── build.py       # The build script
+└── typ/           # Note files in Typst format
+    └── ...
 ```
 
-All of the above directories is the default configuration, which can be overridden by editing the corresponding constants at the beginning of `build.py`. Particularly, the output directories for HTML and PDF files are independent. Thus, for example, you can put them both into a `dist` directory at the same level. That they are nested by default is just because of my personal preference.
-
-You should also look at `site.typ` to check possible configuration options.
+Most of the above directories is the default configuration, which can be overridden by passing command line arguments when running Notty. However, the `_template/` directory is necessary for now, since it keeps the HTML template files used for generating the final HTML files.

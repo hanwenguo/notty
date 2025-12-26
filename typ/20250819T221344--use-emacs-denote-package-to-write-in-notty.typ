@@ -6,7 +6,7 @@
   identifier: "20250819T221344",
 )
 
-If you use Emacs, Notty is accompanied by an Emacs Lisp package providing the integration of Notty and the #link("https://protesilaos.com/emacs/denote")[Denote] package. The following is an example of configuration.
+If you use Emacs, Notty is accompanied by an Emacs Lisp package providing the integration of Notty and the #link("https://protesilaos.com/emacs/denote")[Denote] package. The following is an example of configuration. However, since everyone has different templates, there's a lot of variables to tweak, and you need to read the source code of the package (it's not very big though) to understand how to customize it. A rewrite of the package to make it more idiomatic is planned.
 
 ```emacs-lisp
 (use-package denote
@@ -34,6 +34,9 @@ If you use Emacs, Notty is accompanied by an Emacs Lisp package providing the in
          ("C-c n R" . denote-rename-file-using-front-matter))
   :config
   (push denote-notty-file-type denote-file-types)
+
+  ;; Customize slugification to allow uppercase letters in signatures; this can also be handled
+  ;; at the Typst side.
   (defun +denote-sluggify-signature (str)
     "Make STR an appropriate slug but allowing uppercase letters."
     (denote-slug-put-equals
