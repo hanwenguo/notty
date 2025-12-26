@@ -1,36 +1,67 @@
 # Notty: NOte Taking with TYpst
 
-This is a working example for taking notes in the spirit of [Forester](https://www.forester-notes.org/index/index.xml) in [Typst](https://github.com/typst/typst).
+Notty is a Typst-first note system in the spirit of [Forester](https://www.forester-notes.org/index/index.xml). It compiles Typst notes to HTML, then post-processes the HTML to resolve transclusions, internal links, and backmatter (backlinks/contexts).
 
-For a more detailed document, see this [online demo](https://hanwenguo.github.io/notty/20250619T223048.html).
+There is a [demo site](https://hanwenguo.github.io/notty/) showcasing Notty's features, built with Notty itself as a live example.
 
-## Usage
+## Requirements
 
-You need to have [Typst](https://github.com/typst/typst) and [uv](https://docs.astral.sh/uv/) and [rg](https://github.com/BurntSushi/ripgrep) installed.
+- Typst CLI available on your PATH (`typst`)
+- Rust toolchain only if building from source
+
+## Installation
+
+### Install from source (local checkout)
 
 ```bash
-chmod +x build.py
-./build.py --help
+cargo install --path .
+```
+
+### Install from Git
+
+```bash
+cargo install --git https://github.com/hanwenguo/notty
+```
+
+### Download a release binary
+
+If a release is available for your platform, download it from:
+
+```text
+https://github.com/hanwenguo/notty/releases
+```
+
+Place the binary on your PATH.
+
+## Quick start
+
+Using the installed binary:
+
+```bash
+notty compile
+```
+
+By default, Notty reads Typst sources from `typ/` and outputs the final site to `dist/`. It also uses `.notty/cache` as the cache directory for intermediate files. Override paths if needed:
+
+```bash
+notty compile \
+  --input typ \
+  --cache-dir .notty/cache \
+  --output dist
 ```
 
 ## Features
 
-- [x] Transclusion of notes
-- [x] Export to PDF and HTML
-- [x] Integretation with [Emacs denote package](https://protesilaos.com/emacs/denote)
-- [x] Dispatch metadata processing by taxonomy
-- [x] Backmatters: backlinks, contexts, etc.
+- Utilizes Typst HTML export: just use your templates/styles
+- Transclusion of notes
+- Backmatter generation (backlinks and contexts)
 
-## TODO
-- [ ] Better looking for backmatters
-- [ ] TOC
-- [ ] Bibliography support
-    - [ ] Generate nodes for references
-    - [ ] Reference section in backmatter
-- [ ] Multiple authors & contributors
-- [ ] Multilingual support
-- [ ] Parallel building of notes
-- [ ] Maybe in the future rewrite in Rust and use Typst as a library to be more flexible
+## Planned
+
+- TOC
+- Bibliography support
+- Flexible metadata handling
+- Parallel processing of notes
 
 ## Differences from Simalar Projects
 
@@ -48,7 +79,7 @@ Typsite is a project that uses Typst to generate static sites. It is very simila
 
 Main differences are:
 
-- Typsite aims to be a general purpose static site generator, and provides many features (e.g. schema, rewriting, etc.) for that. Notty is more focused on being a tool for taking scientific notes, thus more opinionated and less flexible. For example, Notty (will) support generating notes directly from BibLaTeX files.
+- Typsite aims to be a general purpose static site generator, and provides many features (e.g. schema, rewriting, etc.) for that. Notty is more focused on being a tool for taking scientific notes, thus more opinionated and less flexible. For example, Notty (will) support generating notes directly from BibTeX files.
 
 ### [Kodama](https://github.com/kokic/kodama)
 
