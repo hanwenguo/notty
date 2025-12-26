@@ -41,12 +41,13 @@ Using the installed binary:
 notty compile
 ```
 
-By default, Notty reads Typst sources from `typ/` and outputs the final site to `dist/`. It also uses `.notty/cache` as the cache directory for intermediate files. Override paths if needed:
+By default, Notty reads Typst sources from `typ/`, uses `.notty/cache` for intermediate HTML, copies assets from `public/`, and outputs the final site to `dist/`. Override paths if needed:
 
 ```bash
 notty compile \
   --input typ \
   --cache-dir .notty/cache \
+  --public-dir public \
   --output dist
 ```
 

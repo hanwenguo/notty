@@ -152,6 +152,10 @@ pub struct CompileArgs {
     )]
     pub html_cache: PathBuf,
 
+    /// Path to public assets directory.
+    #[clap(long = "public-dir", value_hint = ValueHint::DirPath, default_value = "public")]
+    pub public: PathBuf,
+
     /// Path to output directory.
     #[clap(
          value_hint = ValueHint::DirPath,

@@ -46,6 +46,7 @@ pub fn compile(command: &CompileCommand) -> StrResult<()> {
 pub struct BuildConfig {
     pub input_directory: PathBuf,
     pub html_cache_directory: PathBuf,
+    pub public_directory: PathBuf,
     pub output_directory: PathBuf,
     pub world: WorldArgs,
     pub process: ProcessArgs,
@@ -56,6 +57,7 @@ impl BuildConfig {
         Ok(Self {
             input_directory: args.input.clone(),
             html_cache_directory: args.html_cache.clone(),
+            public_directory: args.public.clone(),
             output_directory: args.output.clone(),
             world: args.world.clone(),
             process: args.process.clone(),

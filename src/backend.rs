@@ -19,7 +19,7 @@ struct Note {
 
 pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()> {
     let template_path = Path::new("_template/template.html");
-    let public_dir = Path::new("public");
+    let public_dir = &build_config.public_directory;
     let output_dir = &build_config.output_directory;
 
     let template_html = fs::read_to_string(template_path)
