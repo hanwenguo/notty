@@ -8,6 +8,7 @@
     name: "John Doe",
     id: "john-doe",
   ),
+  math-fonts: ("IBM Plex Math",),
 )
 
 #let html-metadata-taxon-map = (

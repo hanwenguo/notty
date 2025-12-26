@@ -97,6 +97,8 @@ fn compile_typst_file(
         cmd.arg("--package-cache-path").arg(path);
     }
 
+    cmd.arg("--input").arg("notty-target=html");
+
     cmd.arg(source).arg(&output_path);
 
     let output = cmd

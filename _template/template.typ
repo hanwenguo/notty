@@ -1,4 +1,7 @@
 #import "/_template/site.typ": config
+#import "/_template/template-paged.typ": template-paged, ln-paged, tr-paged
+
+#let target = sys.inputs.at("notty-target", default: none)
 
 #let _sequence = [].func()
 #let _styled = [#set text(size: 1pt)].func()
@@ -103,7 +106,7 @@
   ))
 }
 
-#let template(
+#let template-html(
   title: "", 
   date: datetime.today(),
   author: "",
@@ -139,7 +142,13 @@
   })
 }
 
-#let ln(dest, body) = {
+#let template = if target == "html" {
+  template-html
+} else {
+  template-paged
+}
+
+#let ln-html(dest, body) = {
   html.span(
     class: "link local",
     html.elem(
@@ -150,7 +159,13 @@
   )
 }
 
-#let tr(id, show-metadata: false, expanded: true) = {
+#let ln = if target == "html" {
+  ln-html
+} else {
+  ln-paged
+}
+
+#let tr-html(id, show-metadata: false, expanded: true) = {
   html.elem(
     "notty-transclusion",
     attrs: (
@@ -159,4 +174,10 @@
       expanded: if expanded { "true" } else { "false" }
     )
   )
+}
+
+#let tr = if target == "html" {
+  tr-html
+} else {
+  tr-paged
 }
