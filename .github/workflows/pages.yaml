@@ -35,10 +35,10 @@ jobs:
       - name: Build notes
         run: |
           cargo run --release -- compile \
-            --input typ \
             --cache-dir .notty/cache \
             --public-dir public \
-            --output dist
+            typ \
+            dist
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
