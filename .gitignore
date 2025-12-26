@@ -3,8 +3,8 @@ public/
 # generated
 html/
 dist/
-
-typ/id_path_map.json
+# cache
+.notty/
 
 # python
 __pycache__/
