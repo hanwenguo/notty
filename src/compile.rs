@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use typst::diag::StrResult;
+use crate::error::StrResult;
 
 use crate::args::{CompileArgs, CompileCommand, ProcessArgs, WorldArgs};
 use crate::{backend, frontend};

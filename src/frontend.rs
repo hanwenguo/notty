@@ -2,8 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::error::StrResult;
 use ecow::eco_format;
-use typst::diag::StrResult;
 
 use crate::compile::BuildConfig;
 

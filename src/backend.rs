@@ -2,10 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::error::StrResult;
 use ecow::eco_format;
 use ego_tree::{NodeId, NodeRef};
 use scraper::{Html, Node, Selector};
-use typst::diag::StrResult;
 
 use crate::compile::BuildConfig;
 

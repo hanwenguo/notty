@@ -1,5 +1,6 @@
 mod args;
 mod backend;
+mod error;
 mod frontend;
 mod terminal;
 // mod backend;
@@ -15,7 +16,8 @@ use clap::Parser;
 use codespan_reporting::term;
 // use frontend::*;
 use termcolor::WriteColor;
-use typst::diag::HintedStrResult;
+
+use crate::error::StrResult;
 
 thread_local! {
     /// The CLI's exit code.
@@ -37,14 +39,14 @@ fn main() -> ExitCode {
 
     if let Err(msg) = res {
         set_failed();
-        print_error(msg.message()).expect("failed to print error");
+        print_error(msg.as_ref()).expect("failed to print error");
     }
 
     EXIT.with(|cell| cell.get())
 }
 
 /// Execute the requested command.
-fn dispatch() -> HintedStrResult<()> {
+fn dispatch() -> StrResult<()> {
     // let mut timer = Timer::new(&ARGS);
 
     match &ARGS.command {
