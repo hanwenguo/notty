@@ -61,6 +61,7 @@ notty compile \
 - TOC
 - Bibliography support
 - Flexible metadata handling
+- Watch mode for live updates
 - Parallel processing of notes
 
 ## Differences from Simalar Projects
