@@ -1,4 +1,4 @@
-#import "/_template/template.typ": template, tr
+#import "/_template/template.typ": template, tr, notty-section
 #show: template(
   title:      [Writing in Notty],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 29),
@@ -24,5 +24,31 @@ The detailed process is as follows:
 4. Finally, the final HTML file for each note will be constructed. There will be a template HTML file that defines the overall structure of the final HTML files, placed in `_template/template.html`. The content of each note replaces the `<slot name="content"></slot>` of the template, while the generated backmatter sections replace the `<slot name="backmatters"></slot>`. (The use of `<slot>` here is just a placeholder because of the name of the tag; no actual Web Components functionality is involved.) Also, any tags in the `<head>` section of the note's HTML file will be appended to the `<head>` section of the template. Template conditionals can be expressed with `<template id="...">` blocks: if the intermediate HTML contains a `<meta name="hide:ID">` tag, the corresponding template block is omitted; otherwise the `<template>` tag is replaced by its content. The resulting HTML file will be saved as the final output for the note.
 
 After the above processing, the output directory will contain the final HTML files for all notes, with all transclusions and internal links resolved, and backmatter generated.
+
+#notty-section(
+  title: "Using Configuration File"
+)[
+Notty supports a `.notty/config.toml` configuration file to allow users to set project options such as input/output directories, public assets directory, and other preferences. CLI flags override config values.
+
+The following is an example  configuration file:
+
+```toml
+[directories]
+input_dir = "typ"
+output_dir = "dist"
+public_dir = "public"
+cache_dir = ".notty/cache"
+# the above is the equivalent of the corresponding CLI flags
+
+[site]
+domain = "example.com" # the domain of the site; used for generating absolute URLs
+root_dir = "/" # the root directory of the site; for example, if the site is hosted at example.com/notes/, set root_dir = "/notes/"
+trailing_slash = true # if true, the final URL of each note will have a trailing slash
+```
+
+The configuration file is parsed at the start of the program, and values are used as defaults for the corresponding CLI flags. By default, the configuration file is looked for in `.notty/config.toml` relative to the project root, but a different path can be specified with `--config-file <PATH>`. Site settings can also be overridden via CLI with `--site-domain`, `--site-root-dir`, and `--trailing-slash <BOOL>`.
+
+The `trailing_slash` option will affect how internal links are generated and how the output files are organized. If `trailing_slash` is true, each note will be saved in a subdirectory named after its ID, with an `index.html` file inside (e.g., a note with ID `note-123` will be saved as `dist/note-123/index.html`). If false, each note will be saved directly as an HTML file named after its ID (e.g., `dist/note-123.html`). The `root_dir` setting only affects link generation; it does not change where files are written. Special case: a note with ID `index` is always saved as `dist/index.html` and links to the site root.
+]
 
 #tr("notty:20250819T221344", expanded: false)
