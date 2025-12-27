@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use clap::builder::ValueParser;
+use clap::builder::{BoolishValueParser, ValueParser};
 use clap::{ArgAction, Args, Parser, Subcommand, ValueEnum, ValueHint};
 
 /// The character typically used to separate path components
@@ -36,9 +36,26 @@ const AFTER_HELP: &str = color_print::cstr!("\
     max_term_width = 80,
 )]
 pub struct CliArguments {
+    /// Global arguments.
+    #[clap(flatten)]
+    pub global: GlobalArgs,
+
     /// The command to run.
     #[command(subcommand)]
     pub command: Command,
+}
+
+/// Arguments shared by all commands.
+#[derive(Debug, Clone, Args)]
+pub struct GlobalArgs {
+    /// Path to a Notty configuration file.
+    #[arg(
+        long = "config-file",
+        value_name = "PATH",
+        value_hint = ValueHint::FilePath,
+        global = true
+    )]
+    pub config_file: Option<PathBuf>,
 }
 
 /// What to do.
@@ -140,28 +157,30 @@ pub struct CompileCommand {
 /// Arguments for compilation and watching.
 #[derive(Debug, Clone, Args)]
 pub struct CompileArgs {
-    /// Path to input directory.
-    #[clap(value_hint = ValueHint::DirPath, default_value = "typ")]
-    pub input: PathBuf,
+    /// Path to input directory (defaults to config or "typ").
+    #[clap(value_hint = ValueHint::DirPath)]
+    pub input: Option<PathBuf>,
 
-    /// Path to intermediate HTML cache directory.
+    /// Path to intermediate HTML cache directory (defaults to config or ".notty/cache").
     #[clap(
         long = "cache-dir",
-        value_hint = ValueHint::DirPath,
-        default_value = ".notty/cache"
+        value_hint = ValueHint::DirPath
     )]
-    pub html_cache: PathBuf,
+    pub html_cache: Option<PathBuf>,
 
-    /// Path to public assets directory.
-    #[clap(long = "public-dir", value_hint = ValueHint::DirPath, default_value = "public")]
-    pub public: PathBuf,
+    /// Path to public assets directory (defaults to config or "public").
+    #[clap(long = "public-dir", value_hint = ValueHint::DirPath)]
+    pub public: Option<PathBuf>,
 
-    /// Path to output directory.
+    /// Path to output directory (defaults to config or "dist").
     #[clap(
          value_hint = ValueHint::DirPath,
-         default_value = "dist"
      )]
-    pub output: PathBuf,
+    pub output: Option<PathBuf>,
+
+    /// Site configuration.
+    #[clap(flatten)]
+    pub site: SiteArgs,
 
     // /// The format of the output file, inferred from the extension by default.
     // #[arg(long = "format", short = 'f', default_value = "all")]
@@ -178,6 +197,26 @@ pub struct CompileArgs {
     /// Processing arguments.
     #[clap(flatten)]
     pub process: ProcessArgs,
+}
+
+/// Site configuration overrides.
+#[derive(Debug, Clone, Args)]
+pub struct SiteArgs {
+    /// The domain of the site used for generating absolute URLs.
+    #[arg(long = "site-domain", value_name = "DOMAIN")]
+    pub domain: Option<String>,
+
+    /// Root directory of the site (for example, "/notes/").
+    #[arg(long = "site-root-dir", value_name = "DIR")]
+    pub root_dir: Option<String>,
+
+    /// Whether note URLs should end with a trailing slash.
+    #[arg(
+        long = "trailing-slash",
+        value_parser = BoolishValueParser::new(),
+        value_name = "BOOL"
+    )]
+    pub trailing_slash: Option<bool>,
 }
 
 /// Arguments for the construction of a world. Shared by compile, watch, and

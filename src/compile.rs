@@ -1,8 +1,7 @@
-use std::path::PathBuf;
-
 use crate::error::StrResult;
 
-use crate::args::{CompileArgs, CompileCommand, ProcessArgs, WorldArgs};
+use crate::args::CompileCommand;
+use crate::config::{BuildConfig, NottyConfig};
 use crate::{backend, frontend};
 // use crate::args::Output;
 // use crate::args::Input;
@@ -10,8 +9,8 @@ use crate::{backend, frontend};
 // type CodespanResult<T> = Result<T, CodespanError>;
 // type CodespanError = codespan_reporting::files::Error;
 
-pub fn compile(command: &CompileCommand) -> StrResult<()> {
-    let build_config = BuildConfig::new(&command.args)?;
+pub fn compile(command: &CompileCommand, config: &NottyConfig) -> StrResult<()> {
+    let build_config = BuildConfig::from(&command.args, config)?;
 
     let html_dir = frontend::compile_html(&build_config)?;
     backend::process_html(&build_config, &html_dir)?;
@@ -40,29 +39,6 @@ pub fn compile(command: &CompileCommand) -> StrResult<()> {
     //     }
     // }
     Ok(())
-}
-
-/// A preprocessed `CompileCommand`.
-pub struct BuildConfig {
-    pub input_directory: PathBuf,
-    pub html_cache_directory: PathBuf,
-    pub public_directory: PathBuf,
-    pub output_directory: PathBuf,
-    pub world: WorldArgs,
-    pub process: ProcessArgs,
-}
-
-impl BuildConfig {
-    pub fn new(args: &CompileArgs) -> StrResult<Self> {
-        Ok(Self {
-            input_directory: args.input.clone(),
-            html_cache_directory: args.html_cache.clone(),
-            public_directory: args.public.clone(),
-            output_directory: args.output.clone(),
-            world: args.world.clone(),
-            process: args.process.clone(),
-        })
-    }
 }
 
 // /// Caches exported files so that we can avoid re-exporting them if they haven't

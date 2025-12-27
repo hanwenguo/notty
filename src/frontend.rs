@@ -5,7 +5,7 @@ use std::process::Command;
 use crate::error::StrResult;
 use ecow::eco_format;
 
-use crate::compile::BuildConfig;
+use crate::config::BuildConfig;
 
 pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
     let input_dir = &build_config.input_directory;

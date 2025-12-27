@@ -1,5 +1,6 @@
 mod args;
 mod backend;
+mod config;
 mod error;
 mod frontend;
 mod terminal;
@@ -48,9 +49,10 @@ fn main() -> ExitCode {
 /// Execute the requested command.
 fn dispatch() -> StrResult<()> {
     // let mut timer = Timer::new(&ARGS);
+    let config = crate::config::load_config(ARGS.global.config_file.as_deref())?;
 
     match &ARGS.command {
-        Command::Compile(command) => crate::compile::compile(command)?,
+        Command::Compile(command) => crate::compile::compile(command, &config)?,
         // Command::Watch(command) => crate::watch::watch(&mut timer, command)?,
         // Command::Serve(command) => todo!(),
         // Command::Init(command) => crate::init::init(command)?,

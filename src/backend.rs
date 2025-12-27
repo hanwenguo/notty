@@ -7,7 +7,7 @@ use ecow::eco_format;
 use ego_tree::{NodeId, NodeRef};
 use scraper::{Html, Node, Selector};
 
-use crate::compile::BuildConfig;
+use crate::config::{BuildConfig, SiteSettings};
 
 struct Note {
     id: String,
@@ -38,7 +38,7 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             .get(note_id)
             .ok_or_else(|| eco_format!("missing note {note_id} during processing"))?;
 
-        let body_html = render_note_body(note, &processed_bodies, &note_ids)?;
+        let body_html = render_note_body(note, &processed_bodies, &note_ids, &build_config.site)?;
         let head_html = render_note_head(note)?;
         let hide_ids = extract_hide_template_ids(note)?;
 
@@ -82,7 +82,15 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             hidden,
         )?;
 
-        let output_path = output_dir.join(format!("{}.html", note.id));
+        let output_path = output_path_for_note(output_dir, &note.id, &build_config.site);
+        if let Some(parent) = output_path.parent() {
+            fs::create_dir_all(parent).map_err(|err| {
+                eco_format!(
+                    "failed to create output directory {}: {err}",
+                    parent.display()
+                )
+            })?;
+        }
         fs::write(&output_path, final_html).map_err(|err| {
             eco_format!(
                 "failed to write output file {}: {err}",
@@ -282,6 +290,7 @@ fn render_note_body(
     note: &Note,
     processed_bodies: &HashMap<String, String>,
     note_ids: &HashSet<String>,
+    site: &SiteSettings,
 ) -> StrResult<String> {
     let selector = Selector::parse("body")
         .map_err(|err| eco_format!("failed to parse selector body: {err}"))?;
@@ -295,6 +304,7 @@ fn render_note_body(
         mode: RenderMode::Note {
             processed_bodies,
             note_ids,
+            site,
         },
         hide_metadata_node: None,
         collapse_details_node: None,
@@ -442,6 +452,7 @@ enum RenderMode<'a> {
     Note {
         processed_bodies: &'a HashMap<String, String>,
         note_ids: &'a HashSet<String>,
+        site: &'a SiteSettings,
     },
     Template {
         head_html: &'a str,
@@ -494,6 +505,7 @@ fn render_element(
         RenderMode::Note {
             processed_bodies,
             note_ids,
+            site,
         } => {
             if tag.eq_ignore_ascii_case("notty-internal-link") {
                 let target_raw = element.attr("target").ok_or_else(|| {
@@ -510,7 +522,8 @@ fn render_element(
                     ));
                 }
                 let content = render_children(node, context)?;
-                return Ok(format!("<a href=\"{target}.html\">{content}</a>"));
+                let href = build_note_href(&target, site);
+                return Ok(format!("<a href=\"{href}\">{content}</a>"));
             }
 
             if tag.eq_ignore_ascii_case("notty-transclusion") {
@@ -737,6 +750,28 @@ fn normalize_target(raw: &str) -> String {
     let trimmed = raw.trim();
     let normalized = trimmed.strip_prefix("notty:").unwrap_or(trimmed).trim();
     normalized.to_string()
+}
+
+fn build_note_href(note_id: &str, site: &SiteSettings) -> String {
+    if note_id == "index" {
+        return site.root_dir.clone();
+    }
+    if site.trailing_slash {
+        format!("{}{note_id}/", site.root_dir)
+    } else {
+        format!("{}{note_id}.html", site.root_dir)
+    }
+}
+
+fn output_path_for_note(output_dir: &Path, note_id: &str, site: &SiteSettings) -> PathBuf {
+    if note_id == "index" {
+        return output_dir.join("index.html");
+    }
+    if site.trailing_slash {
+        output_dir.join(note_id).join("index.html")
+    } else {
+        output_dir.join(format!("{note_id}.html"))
+    }
 }
 
 fn has_class(value: &str, class: &str) -> bool {

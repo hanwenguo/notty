@@ -4,7 +4,7 @@ public/
 html/
 dist/
 # cache
-.notty/
+.notty/cache/
 
 # python
 __pycache__/

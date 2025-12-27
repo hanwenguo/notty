@@ -1,0 +1,11 @@
+[directories]
+input_dir = "typ"
+output_dir = "dist"
+public_dir = "public"
+cache_dir = ".notty/cache"
+# the above is the equivalent of the corresponding CLI flags
+
+[site]
+domain = "https://hanwenguo.github.io" # the domain of the site; used for generating absolute URLs
+root_dir = "/notty/" # the root directory of the site; for example, if the site is hosted at example.com/notes/, set root_dir = "/notes/"
+trailing_slash = true # if true, the final URL of each note will have a trailing slash
