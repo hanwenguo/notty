@@ -1,12 +1,7 @@
 # generated
-html/
 dist/
 # cache
 .notty/cache/
-
-# python
-__pycache__/
-.venv/
 
 # editor
 .vscode/
