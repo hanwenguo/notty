@@ -50,7 +50,7 @@
         html.summary(html.header({
           html.h1({
             if attrs.at("taxon", default: none) != none {
-              html.span(class: "taxon", attrs.at("taxon") + ". ")
+              html.span(class: "taxon", attrs.at("taxon"))
             }
             title
             " "

@@ -307,6 +307,7 @@ fn render_note_body(
             site,
         },
         hide_metadata_node: None,
+        hide_numbering_node: None,
         collapse_details_node: None,
         note_path: Some(&note.path),
     };
@@ -326,6 +327,7 @@ fn render_note_head(note: &Note) -> StrResult<String> {
     let context = RenderContext {
         mode: RenderMode::Fragment,
         hide_metadata_node: None,
+        hide_numbering_node: None,
         collapse_details_node: None,
         note_path: None,
     };
@@ -349,6 +351,7 @@ fn render_with_template(
             hide_template_ids,
         },
         hide_metadata_node: None,
+        hide_numbering_node: None,
         collapse_details_node: None,
         note_path: None,
     };
@@ -432,7 +435,7 @@ fn render_backmatter_section(
         let body_html = processed_bodies
             .get(&id)
             .ok_or_else(|| eco_format!("backmatter note {id} is missing processed html"))?;
-        let fragment_html = render_fragment_with_options(body_html, true, false)?;
+        let fragment_html = render_fragment_with_options(body_html, true, false, false)?;
         out.push_str(&fragment_html);
     }
 
@@ -444,6 +447,7 @@ fn render_backmatter_section(
 struct RenderContext<'a> {
     mode: RenderMode<'a>,
     hide_metadata_node: Option<NodeId>,
+    hide_numbering_node: Option<NodeId>,
     collapse_details_node: Option<NodeId>,
     note_path: Option<&'a Path>,
 }
@@ -542,7 +546,13 @@ fn render_element(
                 })?;
                 let show_metadata = parse_bool_attr(element.attr("show-metadata"), true);
                 let expanded = parse_bool_attr(element.attr("expanded"), true);
-                return render_fragment_with_options(body_html, show_metadata, expanded);
+                let hide_numbering = parse_bool_attr(element.attr("hide-numbering"), false);
+                return render_fragment_with_options(
+                    body_html,
+                    show_metadata,
+                    expanded,
+                    hide_numbering,
+                );
             }
         }
         RenderMode::Template {
@@ -660,12 +670,14 @@ fn build_attributes(
         .hide_metadata_node
         .is_some_and(|target| target == node_id)
     {
-        let updated = match class_value {
-            Some(existing) if has_class(&existing, "hide-metadata") => existing,
-            Some(existing) => format!("{existing} hide-metadata"),
-            None => "hide-metadata".to_string(),
-        };
-        class_value = Some(updated);
+        add_class(&mut class_value, "hide-metadata");
+    }
+
+    if context
+        .hide_numbering_node
+        .is_some_and(|target| target == node_id)
+    {
+        add_class(&mut class_value, "hide-numbering");
     }
 
     if let Some(class_val) = class_value {
@@ -688,15 +700,14 @@ fn render_fragment_with_options(
     html: &str,
     show_metadata: bool,
     expanded: bool,
+    hide_numbering: bool,
 ) -> StrResult<String> {
     let fragment = Html::parse_fragment(html);
     let root = fragment.tree.root();
 
-    let hide_metadata_node = if show_metadata {
-        None
-    } else {
-        find_first_element(root)
-    };
+    let first_element = find_first_element(root);
+    let hide_metadata_node = if show_metadata { None } else { first_element };
+    let hide_numbering_node = if hide_numbering { first_element } else { None };
 
     let collapse_details_node = if expanded {
         None
@@ -707,6 +718,7 @@ fn render_fragment_with_options(
     let context = RenderContext {
         mode: RenderMode::Fragment,
         hide_metadata_node,
+        hide_numbering_node,
         collapse_details_node,
         note_path: None,
     };
@@ -776,6 +788,15 @@ fn output_path_for_note(output_dir: &Path, note_id: &str, site: &SiteSettings) -
 
 fn has_class(value: &str, class: &str) -> bool {
     value.split_whitespace().any(|item| item == class)
+}
+
+fn add_class(class_value: &mut Option<String>, class: &str) {
+    let updated = match class_value.take() {
+        Some(existing) if has_class(&existing, class) => existing,
+        Some(existing) => format!("{existing} {class}"),
+        None => class.to_string(),
+    };
+    *class_value = Some(updated);
 }
 
 fn is_void_element(tag: &str) -> bool {
