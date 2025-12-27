@@ -53,6 +53,7 @@
               html.span(class: "taxon", attrs.at("taxon") + ". ")
             }
             title
+            " "
             if identifier != none {
               html.a(class: "slug", href: config.root-path + identifier + ".html", "[" + identifier + "]")
             }
