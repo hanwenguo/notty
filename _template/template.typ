@@ -54,7 +54,7 @@
             }
             title
             if identifier != none {
-              html.a(class: "slug", href: "/" + identifier + ".html", "[" + identifier + "]")
+              html.a(class: "slug", href: config.root-path + identifier + ".html", "[" + identifier + "]")
             }
           })
           html.div(class: "metadata", {
