@@ -18,8 +18,10 @@ Notty uses a simple project structure to organize your notes and resources. Say 
 
 ```plain
 notes/
-├── _template/     # Typst templates of Notty
-│   └── ...
+├── .notty/        # Notty configuration and cache
+│   ├── config.toml  # Configuration file (optional)
+│   ├── templates/   # HTML templates
+│   └── cache/      # Cache directory
 ├── public/        # Resource files to be copied to output directory
 │   └── ...
 ├── dist/          # Default output directory
@@ -28,4 +30,4 @@ notes/
     └── ...
 ```
 
-Most of the above directories is the default configuration, which can be overridden by passing command line arguments when running Notty. However, the `_template/` directory is necessary for now, since it keeps the HTML template files used for generating the final HTML files.
+Most of the above directories is the default configuration, which can be overridden by passing command line arguments when running Notty. However, the `.notty` directory is necessary for now, since it keeps the HTML template files and configuration file (if any). You must create the `.notty` directory manually for now; in the future, Notty may provide a command to initialize a project structure automatically.

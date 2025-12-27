@@ -18,7 +18,7 @@ struct Note {
 }
 
 pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()> {
-    let template_path = Path::new("_template/template.html");
+    let template_path = Path::new(".notty/templates/template.html");
     let public_dir = &build_config.public_directory;
     let output_dir = &build_config.output_directory;
 
