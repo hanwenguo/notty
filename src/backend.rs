@@ -49,7 +49,7 @@ struct TransclusionTemplateContext<'a> {
     target: &'a str,
     show_metadata: bool,
     expanded: bool,
-    hide_numbering: bool,
+    disable_numbering: bool,
     demote_headings: bool,
     content: &'a str,
 }
@@ -171,9 +171,7 @@ fn load_templates() -> StrResult<Tera> {
     let pattern = ".notty/templates/**/*.html";
     let mut tera = Tera::new(pattern)
         .map_err(|err| eco_format!("failed to load templates from {pattern}: {err}"))?;
-    tera.register_filter("notty_hide_metadata", notty_hide_metadata_filter);
-    tera.register_filter("notty_hide_numbering", notty_hide_numbering_filter);
-    tera.register_filter("notty_collapse_details", notty_collapse_details_filter);
+    tera.register_filter("notty_disable_numbering", notty_disable_numbering_filter);
     tera.register_filter("notty_demote_headings", notty_demote_headings_filter);
     Ok(tera)
 }
@@ -677,14 +675,14 @@ fn render_element(
                 })?;
                 let show_metadata = parse_bool_attr(element.attr("show-metadata"), true);
                 let expanded = parse_bool_attr(element.attr("expanded"), true);
-                let hide_numbering = parse_bool_attr(element.attr("hide-numbering"), false);
+                let disable_numbering = parse_bool_attr(element.attr("disable-numbering"), false);
                 let demote_headings = parse_bool_attr(element.attr("demote-headings"), true);
                 let content_html = prepare_transclusion_content(body_html.body_html.as_str())?;
                 let transclusion = TransclusionTemplateContext {
                     target: target.as_str(),
                     show_metadata,
                     expanded,
-                    hide_numbering,
+                    disable_numbering,
                     demote_headings,
                     content: content_html.as_str(),
                 };
@@ -759,6 +757,7 @@ fn render_fragment(root: NodeRef<Node>) -> StrResult<String> {
     render_children(root, &context)
 }
 
+#[allow(dead_code)]
 fn find_first_element(root: NodeRef<Node>) -> Option<NodeId> {
     for node in root.descendants() {
         if let Some(element) = node.value().as_element() {
@@ -771,6 +770,7 @@ fn find_first_element(root: NodeRef<Node>) -> Option<NodeId> {
     None
 }
 
+#[allow(dead_code)]
 fn find_first_element_by_tag(root: NodeRef<Node>, tag: &str) -> Option<NodeId> {
     for node in root.descendants() {
         if let Some(element) = node.value().as_element()
@@ -793,6 +793,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 fn set_attr(element: &mut scraper::node::Element, name: &str, value: &str) {
     let existing_key = element
         .attrs
@@ -804,10 +805,12 @@ fn set_attr(element: &mut scraper::node::Element, name: &str, value: &str) {
     element.attrs.insert(key, value.to_string().into());
 }
 
+#[allow(dead_code)]
 fn remove_attr(element: &mut scraper::node::Element, name: &str) {
     element.attrs.retain(|key, _| key.local.as_ref() != name);
 }
 
+#[allow(dead_code)]
 fn add_class_to_element(element: &mut scraper::node::Element, class: &str) {
     let mut class_value = element
         .attrs
@@ -829,35 +832,13 @@ fn parse_bool_attr(value: Option<&str>, default: bool) -> bool {
     }
 }
 
-fn notty_hide_metadata_filter(
+fn notty_disable_numbering_filter(
     value: &TeraValue,
     _args: &HashMap<String, TeraValue>,
 ) -> tera::Result<TeraValue> {
     let html = value
         .as_str()
-        .ok_or_else(|| TeraError::msg("notty_hide_metadata expects a string value"))?;
-    let mut fragment = Html::parse_fragment(html);
-    let target = {
-        let root = fragment.tree.root();
-        find_first_element(root)
-    };
-    if let Some(target) = target {
-        with_element_mut(&mut fragment, target, |element| {
-            add_class_to_element(element, "hide-metadata");
-        });
-    }
-    let rendered =
-        render_fragment(fragment.tree.root()).map_err(|err| TeraError::msg(err.to_string()))?;
-    Ok(TeraValue::String(rendered))
-}
-
-fn notty_hide_numbering_filter(
-    value: &TeraValue,
-    _args: &HashMap<String, TeraValue>,
-) -> tera::Result<TeraValue> {
-    let html = value
-        .as_str()
-        .ok_or_else(|| TeraError::msg("notty_hide_numbering expects a string value"))?;
+        .ok_or_else(|| TeraError::msg("notty_disable_numbering expects a string value"))?;
     let mut fragment = Html::parse_fragment(html);
     let headings = {
         let root = fragment.tree.root();
@@ -873,29 +854,7 @@ fn notty_hide_numbering_filter(
     };
     for node_id in headings {
         with_element_mut(&mut fragment, node_id, |element| {
-            add_class_to_element(element, "hide-numbering");
-        });
-    }
-    let rendered =
-        render_fragment(fragment.tree.root()).map_err(|err| TeraError::msg(err.to_string()))?;
-    Ok(TeraValue::String(rendered))
-}
-
-fn notty_collapse_details_filter(
-    value: &TeraValue,
-    _args: &HashMap<String, TeraValue>,
-) -> tera::Result<TeraValue> {
-    let html = value
-        .as_str()
-        .ok_or_else(|| TeraError::msg("notty_collapse_details expects a string value"))?;
-    let mut fragment = Html::parse_fragment(html);
-    let target = {
-        let root = fragment.tree.root();
-        find_first_element_by_tag(root, "details")
-    };
-    if let Some(target) = target {
-        with_element_mut(&mut fragment, target, |element| {
-            remove_attr(element, "open");
+            add_class_to_element(element, "disable-numbering");
         });
     }
     let rendered =
@@ -950,6 +909,7 @@ fn demote_heading_tag(tag: &str) -> Option<&'static str> {
     }
 }
 
+#[allow(dead_code)]
 fn is_heading_tag(tag: &str) -> bool {
     matches!(
         tag.to_ascii_lowercase().as_str(),
@@ -979,10 +939,12 @@ fn output_path_for_note(output_dir: &Path, note_id: &str, site: &SiteSettings) -
     }
 }
 
+#[allow(dead_code)]
 fn has_class(value: &str, class: &str) -> bool {
     value.split_whitespace().any(|item| item == class)
 }
 
+#[allow(dead_code)]
 fn add_class(class_value: &mut Option<String>, class: &str) {
     let updated = match class_value.take() {
         Some(existing) if has_class(&existing, class) => existing,

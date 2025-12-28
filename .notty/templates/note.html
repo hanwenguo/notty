@@ -23,7 +23,11 @@
     {% endif %}
     <div id="grid-wrapper">
       <article>
-        {{ note.content | safe }}
+        <section class="block">
+          <details open>
+            {{ note.content | safe }}
+          </details>
+        </section>
         <footer>
           {{ note.backmatter | safe }}
         </footer>

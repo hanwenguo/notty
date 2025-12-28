@@ -1,14 +1,12 @@
 {%- set html = transclusion.content -%}
-{%- if not transclusion.show_metadata -%}
-  {%- set html = html | notty_hide_metadata -%}
-{%- endif -%}
-{%- if transclusion.hide_numbering -%}
-  {%- set html = html | notty_hide_numbering -%}
-{%- endif -%}
-{%- if not transclusion.expanded -%}
-  {%- set html = html | notty_collapse_details -%}
+{%- if transclusion.disable_numbering -%}
+  {%- set html = html | notty_disable_numbering -%}
 {%- endif -%}
 {%- if transclusion.demote_headings -%}
   {%- set html = html | notty_demote_headings -%}
 {%- endif -%}
-{{ html | safe }}
+<section class="block {%- if not transclusion.show_metadata %} hide-metadata{%- endif -%}">
+  <details {%- if transclusion.expanded %} open{%- endif -%}>
+    {{ html | safe }}
+  </details>
+</section>

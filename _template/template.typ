@@ -36,39 +36,71 @@
   }
 }
 
-#let _section(
-  body,
+#let _summary_header(
   level: 1,
-  identifier: none,
   title: none,
+  identifier: none,
+  inline: false,
   ..attrs,
 ) = {
-  html.section(
-    class: "block",
-    html.details(
-      open: true,
-      {
-        html.summary(html.header({
-          html.elem("h" + str(level), {
-            if attrs.at("taxon", default: none) != none {
-              html.span(class: "taxon", attrs.at("taxon"))
-            }
-            title
-            " "
-            if identifier != none {
-              html.a(class: "slug", href: config.root-path + identifier + ".html", "[" + identifier + "]")
-            }
-          })
-          html.div(class: "metadata", {
-            html.ul({
-            })
-          })
-        }))
-        body
-      }
-    )
+  html.summary(
+    html.header({
+      html.elem("h" + str(level), {
+        if attrs.at("taxon", default: none) != none {
+          html.span(class: "taxon", attrs.at("taxon"))
+        }
+        title
+        " "
+        if identifier != none {
+          let href = if inline {
+            "#" + identifier
+          } else {
+            config.root-path + identifier + ".html"
+          }
+          html.a(class: "slug", href: href, "[" + identifier + "]")
+        }
+      })
+      html.div(class: "metadata", {
+        html.ul({
+        })
+      })
+    })
   )
 }
+
+// #let _section(
+//   body,
+//   level: 1,
+//   identifier: none,
+//   title: none,
+//   ..attrs,
+// ) = {
+//   html.section(
+//     class: "block",
+//     html.details(
+//       open: true,
+//       {
+//         html.summary(html.header({
+//           html.elem("h" + str(level), attrs: (id: identifier), {
+//             if attrs.at("taxon", default: none) != none {
+//               html.span(class: "taxon", attrs.at("taxon"))
+//             }
+//             title
+//             " "
+//             if identifier != none {
+//               html.a(class: "slug", href: config.root-path + identifier + ".html", "[" + identifier + "]")
+//             }
+//           })
+//           html.div(class: "metadata", {
+//             html.ul({
+//             })
+//           })
+//         }))
+//         body
+//       }
+//     )
+//   )
+// }
 
 #let _head(
   identifier: none,
@@ -93,15 +125,24 @@
   author: none,
   ..attrs,
 ) = {
-  html.body(_section(
-    body,
-    level: 1,
-    identifier: identifier,
-    title: title,
-    date: date,
-    author: author,
-    ..attrs
-  ))
+  // html.body(_section(
+  //   body,
+  //   level: 1,
+  //   identifier: identifier,
+  //   title: title,
+  //   date: date,
+  //   author: author,
+  //   ..attrs
+  // ))
+  html.body({
+    _summary_header(
+      identifier: identifier,
+      title: title,
+      level: 1,
+      ..attrs
+    ) 
+    body
+  })
 }
 
 #let inline-tree(
@@ -109,13 +150,22 @@
   identifier: none,
   title: none,
   ..attrs,
-) = _section(
-  body,
-  level: 2,
-  identifier: identifier,
-  title: title,
-  ..attrs
-)
+) = html.section(
+    class: "block",
+    html.details(
+      open: true,
+      {
+        _summary_header(
+          identifier: identifier,
+          title: title,
+          level: 2,
+          inline: true,
+          ..attrs
+        )
+        body
+      }
+    )
+  )
 
 #let template-html(
   title: "", 
@@ -176,14 +226,14 @@
   ln-paged
 }
 
-#let tr-html(id, show-metadata: false, expanded: true, hide-numbering: false, demote-headings: true) = {
+#let tr-html(id, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
   html.elem(
     "notty-transclusion",
     attrs: (
       target: id,
       show-metadata: if show-metadata { "true" } else { "false" },
       expanded: if expanded { "true" } else { "false" },
-      hide-numbering: if hide-numbering { "true" } else { "false" },
+      disable-numbering: if disable-numbering { "true" } else { "false" },
       demote-headings: if demote-headings { "true" } else { "false" }
     )
   )

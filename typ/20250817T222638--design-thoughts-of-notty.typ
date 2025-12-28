@@ -11,7 +11,7 @@ There are already a bunch of great software exploring the possibilities of takin
 #tr("notty:20250819T220636")
 
 #inline-tree(
-  id: "alternative-choices-for-scientific-notes",
+  identifier: "alternative-choices-for-scientific-notes",
   title:      [Alternative choices for scientific notes],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 07, second: 01),
   tags:       (),

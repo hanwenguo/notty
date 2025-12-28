@@ -26,7 +26,7 @@ The detailed process is as follows:
 After the above processing, the output directory will contain the final HTML files for all notes, with all transclusions and internal links resolved, and backmatter generated.
 
 #inline-tree(
-  id: "using-configuration-file",
+  identifier: "using-configuration-file",
   title: "Using Configuration File"
 )[
 Notty supports a `.notty/config.toml` configuration file to allow users to set project options such as input/output directories, public assets directory, and other preferences. CLI flags override config values.
