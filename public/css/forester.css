@@ -15,140 +15,27 @@ h1 > .taxon:after {
   content: ". ";
 }
 
-details:has(> summary > header > h2) {
-  counter-reset: heading-3;
-}
+details:has(> summary > header > h2) { counter-reset: heading-3; }
+details:has(> summary > header > h3) { counter-reset: heading-4; }
+details:has(> summary > header > h4) { counter-reset: heading-5; }
+details:has(> summary > header > h5) { counter-reset: heading-6; }
 
-h2:before {
-  counter-increment: heading-2;
-  content: counter(heading-2) ". ";
-}
+h2 { counter-increment: heading-2; --num: counter(heading-2); }
+h3 { counter-increment: heading-3; --num: counter(heading-2) "." counter(heading-3); }
+h4 { counter-increment: heading-4; --num: counter(heading-2) "." counter(heading-3) "." counter(heading-4); }
+h5 { counter-increment: heading-5; --num: counter(heading-2) "." counter(heading-3) "." counter(heading-4) "." counter(heading-5); }
+h6 { counter-increment: heading-6; --num: counter(heading-2) "." counter(heading-3) "." counter(heading-4) "." counter(heading-5) "." counter(heading-6); }
 
-h2:has(> .taxon):before {
-  content: none;
-}
-
-h2 > .taxon:after {
-  counter-increment: heading-2;
-  content: " " counter(heading-2) ". ";
-}
-
-h2.disable-numbering:before {
-  counter-increment: none;
-  content: none;
-}
-
-h2.disable-numbering > .taxon:after {
-  counter-increment: none;
-  content: ". ";
-}
-
-details:has(> summary > header > h3) {
-  counter-reset: heading-4;
-}
-
-h3:before {
-  counter-increment: heading-3;
-  content: counter(heading-2) "." counter(heading-3) ". ";
-}
-
-h3:has(> .taxon):before {
-  content: none;
-}
-
-h3 > .taxon:after {
-  counter-increment: heading-3;
-  content: " " counter(heading-2) "." counter(heading-3) ". ";
-}
-
-h3.disable-numbering:before {
-  counter-increment: none;
-  content: none;
-}
-
-h3.disable-numbering > .taxon:after {
-  counter-increment: none;
-  content: ". ";
-}
-
-details:has(> summary > header > h4) {
-  counter-reset: heading-5;
-}
-
-h4:before {
-  counter-increment: heading-4;
-  content: counter(heading-2) "." counter(heading-3) "." counter(heading-4) ". ";
-}
-
-h4:has(> .taxon):before {
-  content: none;
-}
-
-h4 > .taxon:after {
-  counter-increment: heading-4;
-  content: " " counter(heading-2) "." counter(heading-3) "." counter(heading-4) ". ";
-}
-
-h4.disable-numbering:before {
-  counter-increment: none;
-  content: none;
-}
-
-h4.disable-numbering > .taxon:after {
-  counter-increment: none;
-  content: ". ";
-}
-
-details:has(> summary > header > h5) {
-  counter-reset: heading-6;
-}
-
-h5:before {
-  counter-increment: heading-5;
-  content: counter(heading-2) "." counter(heading-3) "." counter(heading-4) "." counter(heading-5) ". ";
-}
-
-h5:has(> .taxon):before {
-  content: none;
-}
-
-h5 > .taxon:after {
-  counter-increment: heading-5;
-  content: " " counter(heading-2) "." counter(heading-3) "." counter(heading-4) "." counter(heading-5) ". ";
-}
-
-h5.disable-numbering:before {
-  counter-increment: none;
-  content: none;
-}
-
-h5.disable-numbering > .taxon:after {
-  counter-increment: none;
-  content: ". ";
-}
-
-h6:before {
-  counter-increment: heading-6;
-  content: counter(heading-2) "." counter(heading-3) "." counter(heading-4) "." counter(heading-5) "." counter(heading-6) ". ";
-}
-
-h6:has(> .taxon):before {
-  content: none;
-}
-
-h6 > .taxon:after {
-  counter-increment: heading-6;
-  content: " " counter(heading-2) "." counter(heading-3) "." counter(heading-4) "." counter(heading-5) "." counter(heading-6) ". ";
-}
-
-h6.disable-numbering:before {
-  counter-increment: none;
-  content: none;
-}
-
-h6.disable-numbering > .taxon:after {
-  counter-increment: none;
-  content: ". ";
+:is(h2, h3, h4, h5, h6) {
+  &.disable-numbering {
+    counter-increment: none;
+    &:before { content: none; }
+    & > .taxon:after { content: ". "; }
+  }
+  &:not(.disable-numbering) {
+    &:not(:has(> .taxon)):before { content: var(--num) ". "; }
+    & > .taxon:after { content: " " var(--num) ". "; }
+  }
 }
 
 h1,
