@@ -34,12 +34,7 @@ jobs:
 
       - name: Build notes
         run: |
-          cargo run --release -- compile \
-            --cache-dir .notty/cache \
-            --public-dir public \
-            typ \
-            dist
-
+          cargo run --release -- compile
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
