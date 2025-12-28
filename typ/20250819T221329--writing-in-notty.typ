@@ -1,4 +1,4 @@
-#import "/_template/template.typ": template, tr, notty-section
+#import "/_template/template.typ": template, tr, inline-tree
 #show: template(
   title:      [Writing in Notty],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 29),
@@ -25,7 +25,8 @@ The detailed process is as follows:
 
 After the above processing, the output directory will contain the final HTML files for all notes, with all transclusions and internal links resolved, and backmatter generated.
 
-#notty-section(
+#inline-tree(
+  id: "using-configuration-file",
   title: "Using Configuration File"
 )[
 Notty supports a `.notty/config.toml` configuration file to allow users to set project options such as input/output directories, public assets directory, and other preferences. CLI flags override config values.

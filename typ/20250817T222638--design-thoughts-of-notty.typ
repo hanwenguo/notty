@@ -1,4 +1,4 @@
-#import "/_template/template.typ": template, tr, ln, notty-section
+#import "/_template/template.typ": template, tr, ln, inline-tree
 #show: template(
   title:      [Design thoughts of Notty],
   date:       datetime(year: 2025, month: 08, day: 17, hour: 22, minute: 26, second: 38),
@@ -10,7 +10,8 @@ There are already a bunch of great software exploring the possibilities of takin
 
 #tr("notty:20250819T220636")
 
-#notty-section(
+#inline-tree(
+  id: "alternative-choices-for-scientific-notes",
   title:      [Alternative choices for scientific notes],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 07, second: 01),
   tags:       (),

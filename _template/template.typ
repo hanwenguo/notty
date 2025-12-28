@@ -36,8 +36,9 @@
   }
 }
 
-#let notty-section(
+#let _section(
   body,
+  level: 1,
   identifier: none,
   title: none,
   ..attrs,
@@ -48,7 +49,7 @@
       open: true,
       {
         html.summary(html.header({
-          html.h1({
+          html.elem("h" + str(level), {
             if attrs.at("taxon", default: none) != none {
               html.span(class: "taxon", attrs.at("taxon"))
             }
@@ -95,8 +96,9 @@
   author: none,
   ..attrs,
 ) = {
-  html.body(notty-section(
+  html.body(_section(
     body,
+    level: 1,
     identifier: identifier,
     title: title,
     date: date,
@@ -104,6 +106,19 @@
     ..attrs
   ))
 }
+
+#let inline-tree(
+  body,
+  identifier: none,
+  title: none,
+  ..attrs,
+) = _section(
+  body,
+  level: 2,
+  identifier: identifier,
+  title: title,
+  ..attrs
+)
 
 #let template-html(
   title: "", 
