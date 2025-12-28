@@ -182,6 +182,10 @@ pub struct CompileArgs {
     #[clap(flatten)]
     pub site: SiteArgs,
 
+    /// Render configuration.
+    #[clap(flatten)]
+    pub render: RenderArgs,
+
     // /// The format of the output file, inferred from the extension by default.
     // #[arg(long = "format", short = 'f', default_value = "all")]
     // pub format: OutputFormat,
@@ -217,6 +221,18 @@ pub struct SiteArgs {
         value_name = "BOOL"
     )]
     pub trailing_slash: Option<bool>,
+}
+
+/// Render configuration overrides.
+#[derive(Debug, Clone, Args)]
+pub struct RenderArgs {
+    /// Whether transcluded headings should be demoted by one level.
+    #[arg(
+        long = "demote-headings",
+        value_parser = BoolishValueParser::new(),
+        value_name = "BOOL"
+    )]
+    pub demote_headings: Option<bool>,
 }
 
 /// Arguments for the construction of a world. Shared by compile, watch, and

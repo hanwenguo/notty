@@ -7,7 +7,7 @@ use ecow::eco_format;
 use ego_tree::{NodeId, NodeRef};
 use scraper::{Html, Node, Selector};
 
-use crate::config::{BuildConfig, SiteSettings};
+use crate::config::{BuildConfig, RenderSettings, SiteSettings};
 
 struct Note {
     id: String,
@@ -38,7 +38,13 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             .get(note_id)
             .ok_or_else(|| eco_format!("missing note {note_id} during processing"))?;
 
-        let body_html = render_note_body(note, &processed_bodies, &note_ids, &build_config.site)?;
+        let body_html = render_note_body(
+            note,
+            &processed_bodies,
+            &note_ids,
+            &build_config.site,
+            &build_config.render,
+        )?;
         let head_html = render_note_head(note)?;
         let hide_ids = extract_hide_template_ids(note)?;
 
@@ -68,8 +74,13 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
         let body_html = processed_bodies
             .get(note_id)
             .ok_or_else(|| eco_format!("missing body html for {note_id}"))?;
-        let backmatter_html =
-            build_backmatter_html(note_id, &backlinks, &contexts, &processed_bodies)?;
+        let backmatter_html = build_backmatter_html(
+            note_id,
+            &backlinks,
+            &contexts,
+            &processed_bodies,
+            &build_config.render,
+        )?;
 
         let hidden = hide_template_ids
             .get(note_id)
@@ -291,6 +302,7 @@ fn render_note_body(
     processed_bodies: &HashMap<String, String>,
     note_ids: &HashSet<String>,
     site: &SiteSettings,
+    render: &RenderSettings,
 ) -> StrResult<String> {
     let selector = Selector::parse("body")
         .map_err(|err| eco_format!("failed to parse selector body: {err}"))?;
@@ -305,10 +317,12 @@ fn render_note_body(
             processed_bodies,
             note_ids,
             site,
+            render,
         },
         hide_metadata_node: None,
         hide_numbering_node: None,
         collapse_details_node: None,
+        demote_headings: false,
         note_path: Some(&note.path),
     };
 
@@ -329,6 +343,7 @@ fn render_note_head(note: &Note) -> StrResult<String> {
         hide_metadata_node: None,
         hide_numbering_node: None,
         collapse_details_node: None,
+        demote_headings: false,
         note_path: None,
     };
 
@@ -353,6 +368,7 @@ fn render_with_template(
         hide_metadata_node: None,
         hide_numbering_node: None,
         collapse_details_node: None,
+        demote_headings: false,
         note_path: None,
     };
 
@@ -396,14 +412,17 @@ fn build_backmatter_html(
     backlinks: &HashMap<String, Vec<String>>,
     contexts: &HashMap<String, Vec<String>>,
     processed_bodies: &HashMap<String, String>,
+    render: &RenderSettings,
 ) -> StrResult<String> {
     let mut sections = String::new();
     if let Some(ids) = backlinks.get(note_id) {
-        let section = render_backmatter_section("Backlinks", "backlinks", ids, processed_bodies)?;
+        let section =
+            render_backmatter_section("Backlinks", "backlinks", ids, processed_bodies, render)?;
         sections.push_str(&section);
     }
     if let Some(ids) = contexts.get(note_id) {
-        let section = render_backmatter_section("Contexts", "contexts", ids, processed_bodies)?;
+        let section =
+            render_backmatter_section("Contexts", "contexts", ids, processed_bodies, render)?;
         sections.push_str(&section);
     }
     Ok(sections)
@@ -414,6 +433,7 @@ fn render_backmatter_section(
     class_name: &str,
     note_ids: &[String],
     processed_bodies: &HashMap<String, String>,
+    render: &RenderSettings,
 ) -> StrResult<String> {
     if note_ids.is_empty() {
         return Ok(String::new());
@@ -435,7 +455,8 @@ fn render_backmatter_section(
         let body_html = processed_bodies
             .get(&id)
             .ok_or_else(|| eco_format!("backmatter note {id} is missing processed html"))?;
-        let fragment_html = render_fragment_with_options(body_html, true, false, false)?;
+        let fragment_html =
+            render_fragment_with_options(body_html, true, false, false, render.demote_headings)?;
         out.push_str(&fragment_html);
     }
 
@@ -449,6 +470,7 @@ struct RenderContext<'a> {
     hide_metadata_node: Option<NodeId>,
     hide_numbering_node: Option<NodeId>,
     collapse_details_node: Option<NodeId>,
+    demote_headings: bool,
     note_path: Option<&'a Path>,
 }
 
@@ -457,6 +479,7 @@ enum RenderMode<'a> {
         processed_bodies: &'a HashMap<String, String>,
         note_ids: &'a HashSet<String>,
         site: &'a SiteSettings,
+        render: &'a RenderSettings,
     },
     Template {
         head_html: &'a str,
@@ -510,6 +533,7 @@ fn render_element(
             processed_bodies,
             note_ids,
             site,
+            render,
         } => {
             if tag.eq_ignore_ascii_case("notty-internal-link") {
                 let target_raw = element.attr("target").ok_or_else(|| {
@@ -552,6 +576,7 @@ fn render_element(
                     show_metadata,
                     expanded,
                     hide_numbering,
+                    render.demote_headings,
                 );
             }
         }
@@ -607,23 +632,28 @@ fn render_element(
     }
 
     let (attrs, is_void) = build_attributes(element, context, node.id());
+    let render_tag = if context.demote_headings {
+        demote_heading_tag(tag).unwrap_or(tag)
+    } else {
+        tag
+    };
 
     if tag.eq_ignore_ascii_case("script") || tag.eq_ignore_ascii_case("style") {
         let mut out = String::new();
         out.push('<');
-        out.push_str(tag);
+        out.push_str(render_tag);
         out.push_str(&attrs);
         out.push('>');
         out.push_str(&render_raw_children(node, context)?);
         out.push_str("</");
-        out.push_str(tag);
+        out.push_str(render_tag);
         out.push('>');
         return Ok(out);
     }
 
     let mut out = String::new();
     out.push('<');
-    out.push_str(tag);
+    out.push_str(render_tag);
     out.push_str(&attrs);
 
     if is_void {
@@ -634,7 +664,7 @@ fn render_element(
     out.push('>');
     out.push_str(&render_children(node, context)?);
     out.push_str("</");
-    out.push_str(tag);
+    out.push_str(render_tag);
     out.push('>');
 
     Ok(out)
@@ -701,6 +731,7 @@ fn render_fragment_with_options(
     show_metadata: bool,
     expanded: bool,
     hide_numbering: bool,
+    demote_headings: bool,
 ) -> StrResult<String> {
     let fragment = Html::parse_fragment(html);
     let root = fragment.tree.root();
@@ -720,6 +751,7 @@ fn render_fragment_with_options(
         hide_metadata_node,
         hide_numbering_node,
         collapse_details_node,
+        demote_headings,
         note_path: None,
     };
 
@@ -762,6 +794,17 @@ fn normalize_target(raw: &str) -> String {
     let trimmed = raw.trim();
     let normalized = trimmed.strip_prefix("notty:").unwrap_or(trimmed).trim();
     normalized.to_string()
+}
+
+fn demote_heading_tag(tag: &str) -> Option<&'static str> {
+    match tag.to_ascii_lowercase().as_str() {
+        "h1" => Some("h2"),
+        "h2" => Some("h3"),
+        "h3" => Some("h4"),
+        "h4" => Some("h5"),
+        "h5" => Some("h6"),
+        _ => None,
+    }
 }
 
 fn build_note_href(note_id: &str, site: &SiteSettings) -> String {
