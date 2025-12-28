@@ -17,9 +17,6 @@ pub struct NottyConfig {
 
     #[serde(default)]
     pub site: SiteConfig,
-
-    #[serde(default)]
-    pub render: RenderConfig,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -37,22 +34,12 @@ pub struct SiteConfig {
     pub trailing_slash: Option<bool>,
 }
 
-#[derive(Debug, Default, Deserialize)]
-pub struct RenderConfig {
-    pub demote_headings: Option<bool>,
-}
-
 #[derive(Debug, Clone)]
 pub struct SiteSettings {
     #[allow(dead_code)]
     pub domain: Option<String>,
     pub root_dir: String,
     pub trailing_slash: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct RenderSettings {
-    pub demote_headings: bool,
 }
 
 /// A preprocessed `CompileCommand` with config defaults applied.
@@ -63,7 +50,6 @@ pub struct BuildConfig {
     pub public_directory: PathBuf,
     pub output_directory: PathBuf,
     pub site: SiteSettings,
-    pub render: RenderSettings,
     pub world: WorldArgs,
     pub process: ProcessArgs,
 }
@@ -125,11 +111,6 @@ impl BuildConfig {
             .site
             .trailing_slash
             .unwrap_or(config.site.trailing_slash.unwrap_or(false));
-        let demote_headings = args
-            .render
-            .demote_headings
-            .unwrap_or(config.render.demote_headings.unwrap_or(true));
-
         Ok(Self {
             input_directory,
             html_cache_directory,
@@ -140,7 +121,6 @@ impl BuildConfig {
                 root_dir,
                 trailing_slash,
             },
-            render: RenderSettings { demote_headings },
             world: args.world.clone(),
             process: args.process.clone(),
         })

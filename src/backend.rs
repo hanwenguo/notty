@@ -6,8 +6,10 @@ use crate::error::StrResult;
 use ecow::eco_format;
 use ego_tree::{NodeId, NodeRef};
 use scraper::{Html, Node, Selector};
+use serde::Serialize;
+use tera::{Context, Error as TeraError, Tera, Value as TeraValue};
 
-use crate::config::{BuildConfig, RenderSettings, SiteSettings};
+use crate::config::{BuildConfig, SiteSettings};
 
 struct Note {
     id: String,
@@ -17,13 +19,45 @@ struct Note {
     links_out: Vec<String>,
 }
 
+#[derive(Serialize)]
+struct NoteTemplateContext<'a> {
+    id: &'a str,
+    title: Option<&'a str>,
+    metadata: &'a HashMap<String, String>,
+    head: &'a str,
+    content: &'a str,
+    backmatter: &'a str,
+    hide: &'a [String],
+}
+
+#[derive(Serialize)]
+struct LinkTemplateContext<'a> {
+    target: &'a str,
+    text: &'a str,
+    href: &'a str,
+}
+
+#[derive(Serialize)]
+struct TransclusionTemplateContext<'a> {
+    target: &'a str,
+    show_metadata: bool,
+    expanded: bool,
+    hide_numbering: bool,
+    demote_headings: bool,
+    content: &'a str,
+}
+
+#[derive(Serialize)]
+struct SiteTemplateContext<'a> {
+    root_dir: &'a str,
+    trailing_slash: bool,
+    domain: Option<&'a str>,
+}
+
 pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()> {
-    let template_path = Path::new(".notty/templates/template.html");
     let public_dir = &build_config.public_directory;
     let output_dir = &build_config.output_directory;
-
-    let template_html = fs::read_to_string(template_path)
-        .map_err(|err| eco_format!("failed to read template {}: {err}", template_path.display()))?;
+    let templates = load_templates()?;
 
     let notes = load_notes(html_dir)?;
     let order = topo_sort_transclusions(&notes)?;
@@ -31,7 +65,9 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
     let note_ids: HashSet<String> = notes.keys().cloned().collect();
     let mut processed_bodies = HashMap::new();
     let mut processed_heads = HashMap::new();
-    let mut hide_template_ids = HashMap::new();
+    let mut note_metadata = HashMap::new();
+    let mut note_titles = HashMap::new();
+    let mut note_hide_ids = HashMap::new();
 
     for note_id in &order {
         let note = notes
@@ -43,14 +79,18 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             &processed_bodies,
             &note_ids,
             &build_config.site,
-            &build_config.render,
+            &templates,
         )?;
         let head_html = render_note_head(note)?;
+        let metadata = extract_metadata(note)?;
+        let title = extract_note_title(note, &metadata)?;
         let hide_ids = extract_hide_template_ids(note)?;
 
         processed_bodies.insert(note_id.clone(), body_html);
         processed_heads.insert(note_id.clone(), head_html);
-        hide_template_ids.insert(note_id.clone(), hide_ids);
+        note_metadata.insert(note_id.clone(), metadata);
+        note_titles.insert(note_id.clone(), title);
+        note_hide_ids.insert(note_id.clone(), hide_ids);
     }
 
     let backlinks = compute_backlinks(&notes);
@@ -74,24 +114,43 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
         let body_html = processed_bodies
             .get(note_id)
             .ok_or_else(|| eco_format!("missing body html for {note_id}"))?;
+        let metadata = note_metadata
+            .get(note_id)
+            .ok_or_else(|| eco_format!("missing metadata for {note_id}"))?;
+        let title = note_titles
+            .get(note_id)
+            .ok_or_else(|| eco_format!("missing title for {note_id}"))?
+            .as_deref();
         let backmatter_html = build_backmatter_html(
             note_id,
             &backlinks,
             &contexts,
             &processed_bodies,
-            &build_config.render,
+            &templates,
+            &build_config.site,
         )?;
 
-        let hidden = hide_template_ids
+        let hidden = note_hide_ids
             .get(note_id)
             .ok_or_else(|| eco_format!("missing template hide list for {note_id}"))?;
-        let final_html = render_with_template(
-            &template_html,
-            head_html,
-            body_html,
-            &backmatter_html,
-            hidden,
-        )?;
+        let note_context = NoteTemplateContext {
+            id: note_id.as_str(),
+            title,
+            metadata,
+            head: head_html.as_str(),
+            content: body_html.as_str(),
+            backmatter: backmatter_html.as_str(),
+            hide: hidden.as_slice(),
+        };
+        let site_context = SiteTemplateContext {
+            root_dir: build_config.site.root_dir.as_str(),
+            trailing_slash: build_config.site.trailing_slash,
+            domain: build_config.site.domain.as_deref(),
+        };
+        let mut context = Context::new();
+        context.insert("note", &note_context);
+        context.insert("site", &site_context);
+        let final_html = render_template(&templates, "note.html", &context)?;
 
         let output_path = output_path_for_note(output_dir, &note.id, &build_config.site);
         if let Some(parent) = output_path.parent() {
@@ -111,6 +170,66 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
     }
 
     Ok(())
+}
+
+fn load_templates() -> StrResult<Tera> {
+    let pattern = ".notty/templates/**/*.html";
+    let mut tera = Tera::new(pattern)
+        .map_err(|err| eco_format!("failed to load templates from {pattern}: {err}"))?;
+    tera.register_filter("notty_hide_metadata", notty_hide_metadata_filter);
+    tera.register_filter("notty_hide_numbering", notty_hide_numbering_filter);
+    tera.register_filter("notty_collapse_details", notty_collapse_details_filter);
+    tera.register_filter("notty_demote_headings", notty_demote_headings_filter);
+    Ok(tera)
+}
+
+fn render_template(templates: &Tera, name: &str, context: &Context) -> StrResult<String> {
+    templates
+        .render(name, context)
+        .map_err(|err| eco_format!("failed to render template {name}: {err}"))
+}
+
+fn render_internal_link(
+    templates: &Tera,
+    site: &SiteSettings,
+    target: &str,
+    text: &str,
+) -> StrResult<String> {
+    let href = build_note_href(target, site);
+    let link = LinkTemplateContext {
+        target,
+        text,
+        href: href.as_str(),
+    };
+    let site_context = SiteTemplateContext {
+        root_dir: site.root_dir.as_str(),
+        trailing_slash: site.trailing_slash,
+        domain: site.domain.as_deref(),
+    };
+    let mut context = Context::new();
+    context.insert("link", &link);
+    context.insert("site", &site_context);
+    render_template(templates, "internal_link.html", &context)
+}
+
+fn render_transclusion(
+    templates: &Tera,
+    site: &SiteSettings,
+    transclusion: &TransclusionTemplateContext,
+) -> StrResult<String> {
+    let site_context = SiteTemplateContext {
+        root_dir: site.root_dir.as_str(),
+        trailing_slash: site.trailing_slash,
+        domain: site.domain.as_deref(),
+    };
+    let mut context = Context::new();
+    context.insert("transclusion", transclusion);
+    context.insert("site", &site_context);
+    render_template(templates, "transclusion.html", &context)
+}
+
+fn prepare_transclusion_content(body_html: &str) -> StrResult<String> {
+    Ok(body_html.to_string())
 }
 
 fn load_notes(html_dir: &Path) -> StrResult<HashMap<String, Note>> {
@@ -194,7 +313,47 @@ fn extract_note_id(document: &Html, path: &Path) -> StrResult<String> {
     ))
 }
 
-fn extract_hide_template_ids(note: &Note) -> StrResult<HashSet<String>> {
+fn extract_metadata(note: &Note) -> StrResult<HashMap<String, String>> {
+    let selector = Selector::parse("head meta")
+        .map_err(|err| eco_format!("failed to parse selector head meta: {err}"))?;
+    let mut metadata = HashMap::new();
+    for element in note.document.select(&selector) {
+        let Some(name) = element.value().attr("name") else {
+            continue;
+        };
+        let Some(content) = element.value().attr("content") else {
+            continue;
+        };
+        let key = name.trim().to_ascii_lowercase();
+        if key.is_empty() {
+            continue;
+        }
+        metadata.insert(key, content.to_string());
+    }
+    Ok(metadata)
+}
+
+fn extract_note_title(
+    note: &Note,
+    metadata: &HashMap<String, String>,
+) -> StrResult<Option<String>> {
+    if let Some(title) = metadata.get("title") {
+        return Ok(Some(title.clone()));
+    }
+
+    let selector = Selector::parse("head title")
+        .map_err(|err| eco_format!("failed to parse selector head title: {err}"))?;
+    for element in note.document.select(&selector) {
+        let text = element.text().collect::<String>().trim().to_string();
+        if !text.is_empty() {
+            return Ok(Some(text));
+        }
+    }
+
+    Ok(None)
+}
+
+fn extract_hide_template_ids(note: &Note) -> StrResult<Vec<String>> {
     let selector = Selector::parse("head meta")
         .map_err(|err| eco_format!("failed to parse selector head meta: {err}"))?;
     let mut ids = HashSet::new();
@@ -211,7 +370,9 @@ fn extract_hide_template_ids(note: &Note) -> StrResult<HashSet<String>> {
             ids.insert(id.to_string());
         }
     }
-    Ok(ids)
+    let mut out: Vec<String> = ids.into_iter().collect();
+    out.sort();
+    Ok(out)
 }
 
 fn collect_targets(document: &Html, tag: &str, path: &Path) -> StrResult<Vec<String>> {
@@ -302,7 +463,7 @@ fn render_note_body(
     processed_bodies: &HashMap<String, String>,
     note_ids: &HashSet<String>,
     site: &SiteSettings,
-    render: &RenderSettings,
+    templates: &Tera,
 ) -> StrResult<String> {
     let selector = Selector::parse("body")
         .map_err(|err| eco_format!("failed to parse selector body: {err}"))?;
@@ -317,7 +478,7 @@ fn render_note_body(
             processed_bodies,
             note_ids,
             site,
-            render,
+            templates,
         },
         hide_metadata_node: None,
         hide_numbering_node: None,
@@ -348,31 +509,6 @@ fn render_note_head(note: &Note) -> StrResult<String> {
     };
 
     render_children(*head, &context)
-}
-
-fn render_with_template(
-    template_html: &str,
-    head_html: &str,
-    body_html: &str,
-    backmatter_html: &str,
-    hide_template_ids: &HashSet<String>,
-) -> StrResult<String> {
-    let document = Html::parse_document(template_html);
-    let context = RenderContext {
-        mode: RenderMode::Template {
-            head_html,
-            content_html: body_html,
-            backmatter_html,
-            hide_template_ids,
-        },
-        hide_metadata_node: None,
-        hide_numbering_node: None,
-        collapse_details_node: None,
-        demote_headings: false,
-        note_path: None,
-    };
-
-    render_node(document.tree.root(), &context)
 }
 
 fn compute_backlinks(notes: &HashMap<String, Note>) -> HashMap<String, Vec<String>> {
@@ -412,17 +548,30 @@ fn build_backmatter_html(
     backlinks: &HashMap<String, Vec<String>>,
     contexts: &HashMap<String, Vec<String>>,
     processed_bodies: &HashMap<String, String>,
-    render: &RenderSettings,
+    templates: &Tera,
+    site: &SiteSettings,
 ) -> StrResult<String> {
     let mut sections = String::new();
     if let Some(ids) = backlinks.get(note_id) {
-        let section =
-            render_backmatter_section("Backlinks", "backlinks", ids, processed_bodies, render)?;
+        let section = render_backmatter_section(
+            "Backlinks",
+            "backlinks",
+            ids,
+            processed_bodies,
+            templates,
+            site,
+        )?;
         sections.push_str(&section);
     }
     if let Some(ids) = contexts.get(note_id) {
-        let section =
-            render_backmatter_section("Contexts", "contexts", ids, processed_bodies, render)?;
+        let section = render_backmatter_section(
+            "Contexts",
+            "contexts",
+            ids,
+            processed_bodies,
+            templates,
+            site,
+        )?;
         sections.push_str(&section);
     }
     Ok(sections)
@@ -433,7 +582,8 @@ fn render_backmatter_section(
     class_name: &str,
     note_ids: &[String],
     processed_bodies: &HashMap<String, String>,
-    render: &RenderSettings,
+    templates: &Tera,
+    site: &SiteSettings,
 ) -> StrResult<String> {
     if note_ids.is_empty() {
         return Ok(String::new());
@@ -455,9 +605,17 @@ fn render_backmatter_section(
         let body_html = processed_bodies
             .get(&id)
             .ok_or_else(|| eco_format!("backmatter note {id} is missing processed html"))?;
-        let fragment_html =
-            render_fragment_with_options(body_html, true, false, false, render.demote_headings)?;
-        out.push_str(&fragment_html);
+        let content_html = prepare_transclusion_content(body_html)?;
+        let transclusion = TransclusionTemplateContext {
+            target: id.as_str(),
+            show_metadata: true,
+            expanded: false,
+            hide_numbering: false,
+            demote_headings: true,
+            content: content_html.as_str(),
+        };
+        let transclusion_html = render_transclusion(templates, site, &transclusion)?;
+        out.push_str(&transclusion_html);
     }
 
     out.push_str("</div></section>");
@@ -479,13 +637,7 @@ enum RenderMode<'a> {
         processed_bodies: &'a HashMap<String, String>,
         note_ids: &'a HashSet<String>,
         site: &'a SiteSettings,
-        render: &'a RenderSettings,
-    },
-    Template {
-        head_html: &'a str,
-        content_html: &'a str,
-        backmatter_html: &'a str,
-        hide_template_ids: &'a HashSet<String>,
+        templates: &'a Tera,
     },
     Fragment,
 }
@@ -533,7 +685,7 @@ fn render_element(
             processed_bodies,
             note_ids,
             site,
-            render,
+            templates,
         } => {
             if tag.eq_ignore_ascii_case("notty-internal-link") {
                 let target_raw = element.attr("target").ok_or_else(|| {
@@ -550,8 +702,7 @@ fn render_element(
                     ));
                 }
                 let content = render_children(node, context)?;
-                let href = build_note_href(&target, site);
-                return Ok(format!("<a href=\"{href}\">{content}</a>"));
+                return render_internal_link(templates, site, &target, &content);
             }
 
             if tag.eq_ignore_ascii_case("notty-transclusion") {
@@ -571,53 +722,17 @@ fn render_element(
                 let show_metadata = parse_bool_attr(element.attr("show-metadata"), true);
                 let expanded = parse_bool_attr(element.attr("expanded"), true);
                 let hide_numbering = parse_bool_attr(element.attr("hide-numbering"), false);
-                return render_fragment_with_options(
-                    body_html,
+                let demote_headings = parse_bool_attr(element.attr("demote-headings"), true);
+                let content_html = prepare_transclusion_content(body_html)?;
+                let transclusion = TransclusionTemplateContext {
+                    target: target.as_str(),
                     show_metadata,
                     expanded,
                     hide_numbering,
-                    render.demote_headings,
-                );
-            }
-        }
-        RenderMode::Template {
-            head_html,
-            content_html,
-            backmatter_html,
-            hide_template_ids,
-        } => {
-            if tag.eq_ignore_ascii_case("template")
-                && let Some(id) = element.attr("id")
-            {
-                if hide_template_ids.contains(id) {
-                    return Ok(String::new());
-                }
-                return render_children(node, context);
-            }
-            if tag.eq_ignore_ascii_case("slot")
-                && let Some(name) = element.attr("name")
-            {
-                if name == "content" {
-                    return Ok(content_html.to_string());
-                }
-                if name == "backmatters" {
-                    return Ok(backmatter_html.to_string());
-                }
-            }
-
-            if tag.eq_ignore_ascii_case("head") {
-                let mut out = String::new();
-                let (attrs, _) = build_attributes(element, context, node.id());
-                out.push('<');
-                out.push_str(tag);
-                out.push_str(&attrs);
-                out.push('>');
-                out.push_str(&render_children(node, context)?);
-                out.push_str(head_html);
-                out.push_str("</");
-                out.push_str(tag);
-                out.push('>');
-                return Ok(out);
+                    demote_headings,
+                    content: content_html.as_str(),
+                };
+                return render_transclusion(templates, site, &transclusion);
             }
         }
         RenderMode::Fragment => {
@@ -788,6 +903,54 @@ fn parse_bool_attr(value: Option<&str>, default: bool) -> bool {
         Some(_) => default,
         None => default,
     }
+}
+
+fn notty_hide_metadata_filter(
+    value: &TeraValue,
+    _args: &HashMap<String, TeraValue>,
+) -> tera::Result<TeraValue> {
+    let html = value
+        .as_str()
+        .ok_or_else(|| TeraError::msg("notty_hide_metadata expects a string value"))?;
+    let rendered = render_fragment_with_options(html, false, true, false, false)
+        .map_err(|err| TeraError::msg(err.to_string()))?;
+    Ok(TeraValue::String(rendered))
+}
+
+fn notty_hide_numbering_filter(
+    value: &TeraValue,
+    _args: &HashMap<String, TeraValue>,
+) -> tera::Result<TeraValue> {
+    let html = value
+        .as_str()
+        .ok_or_else(|| TeraError::msg("notty_hide_numbering expects a string value"))?;
+    let rendered = render_fragment_with_options(html, true, true, true, false)
+        .map_err(|err| TeraError::msg(err.to_string()))?;
+    Ok(TeraValue::String(rendered))
+}
+
+fn notty_collapse_details_filter(
+    value: &TeraValue,
+    _args: &HashMap<String, TeraValue>,
+) -> tera::Result<TeraValue> {
+    let html = value
+        .as_str()
+        .ok_or_else(|| TeraError::msg("notty_collapse_details expects a string value"))?;
+    let rendered = render_fragment_with_options(html, true, false, false, false)
+        .map_err(|err| TeraError::msg(err.to_string()))?;
+    Ok(TeraValue::String(rendered))
+}
+
+fn notty_demote_headings_filter(
+    value: &TeraValue,
+    _args: &HashMap<String, TeraValue>,
+) -> tera::Result<TeraValue> {
+    let html = value
+        .as_str()
+        .ok_or_else(|| TeraError::msg("notty_demote_headings expects a string value"))?;
+    let rendered = render_fragment_with_options(html, true, true, false, true)
+        .map_err(|err| TeraError::msg(err.to_string()))?;
+    Ok(TeraValue::String(rendered))
 }
 
 fn normalize_target(raw: &str) -> String {

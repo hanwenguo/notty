@@ -1,0 +1,14 @@
+{%- set html = transclusion.content -%}
+{%- if not transclusion.show_metadata -%}
+  {%- set html = html | notty_hide_metadata -%}
+{%- endif -%}
+{%- if transclusion.hide_numbering -%}
+  {%- set html = html | notty_hide_numbering -%}
+{%- endif -%}
+{%- if not transclusion.expanded -%}
+  {%- set html = html | notty_collapse_details -%}
+{%- endif -%}
+{%- if transclusion.demote_headings -%}
+  {%- set html = html | notty_demote_headings -%}
+{%- endif -%}
+{{ html | safe }}
