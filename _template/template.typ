@@ -164,13 +164,15 @@
   ln-paged
 }
 
-#let tr-html(id, show-metadata: false, expanded: true) = {
+#let tr-html(id, show-metadata: false, expanded: true, hide-numbering: false, demote-headings: true) = {
   html.elem(
     "notty-transclusion",
     attrs: (
       target: id,
       show-metadata: if show-metadata { "true" } else { "false" },
-      expanded: if expanded { "true" } else { "false" }
+      expanded: if expanded { "true" } else { "false" },
+      hide-numbering: if hide-numbering { "true" } else { "false" },
+      demote-headings: if demote-headings { "true" } else { "false" }
     )
   )
 }

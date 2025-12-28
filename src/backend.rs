@@ -484,6 +484,7 @@ fn render_note_body(
         hide_numbering_node: None,
         collapse_details_node: None,
         demote_headings: false,
+        heading_class: None,
         note_path: Some(&note.path),
     };
 
@@ -505,6 +506,7 @@ fn render_note_head(note: &Note) -> StrResult<String> {
         hide_numbering_node: None,
         collapse_details_node: None,
         demote_headings: false,
+        heading_class: None,
         note_path: None,
     };
 
@@ -629,6 +631,7 @@ struct RenderContext<'a> {
     hide_numbering_node: Option<NodeId>,
     collapse_details_node: Option<NodeId>,
     demote_headings: bool,
+    heading_class: Option<&'a str>,
     note_path: Option<&'a Path>,
 }
 
@@ -825,6 +828,12 @@ fn build_attributes(
         add_class(&mut class_value, "hide-numbering");
     }
 
+    if let Some(heading_class) = context.heading_class
+        && is_heading_tag(element.name())
+    {
+        add_class(&mut class_value, heading_class);
+    }
+
     if let Some(class_val) = class_value {
         attrs.push(("class".to_string(), class_val));
     }
@@ -867,6 +876,24 @@ fn render_fragment_with_options(
         hide_numbering_node,
         collapse_details_node,
         demote_headings,
+        heading_class: None,
+        note_path: None,
+    };
+
+    render_children(root, &context)
+}
+
+fn render_fragment_with_heading_class(html: &str, class_name: &str) -> StrResult<String> {
+    let fragment = Html::parse_fragment(html);
+    let root = fragment.tree.root();
+
+    let context = RenderContext {
+        mode: RenderMode::Fragment,
+        hide_metadata_node: None,
+        hide_numbering_node: None,
+        collapse_details_node: None,
+        demote_headings: false,
+        heading_class: Some(class_name),
         note_path: None,
     };
 
@@ -924,7 +951,7 @@ fn notty_hide_numbering_filter(
     let html = value
         .as_str()
         .ok_or_else(|| TeraError::msg("notty_hide_numbering expects a string value"))?;
-    let rendered = render_fragment_with_options(html, true, true, true, false)
+    let rendered = render_fragment_with_heading_class(html, "hide-numbering")
         .map_err(|err| TeraError::msg(err.to_string()))?;
     Ok(TeraValue::String(rendered))
 }
@@ -968,6 +995,13 @@ fn demote_heading_tag(tag: &str) -> Option<&'static str> {
         "h5" => Some("h6"),
         _ => None,
     }
+}
+
+fn is_heading_tag(tag: &str) -> bool {
+    matches!(
+        tag.to_ascii_lowercase().as_str(),
+        "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
+    )
 }
 
 fn build_note_href(note_id: &str, site: &SiteSettings) -> String {

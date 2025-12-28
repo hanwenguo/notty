@@ -142,4 +142,4 @@
 #let ln-paged(dest, body) = link(dest, body)
 
 // #let tr-paged(url, show-metadata: false, expanded: true) = par(link(url))
-#let tr-paged(url, show-metadata: false, expanded: true) = heading(depth: 2)[TRANSCUSION: #url]
+#let tr-paged(url, show-metadata: false, expanded: true, hide-numbering: false, demote-headings: true) = heading(depth: 2)[TRANSCUSION: #url]
