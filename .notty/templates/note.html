@@ -12,8 +12,7 @@
     {{ note.head | safe }}
   </head>
   <body>
-    {% if "home" not in note.hide %}
-    {% if "header" not in note.hide %}
+    {% if note.id != "index" %}
     <header class="header">
       <nav class="nav">
         <div class="logo">
@@ -21,7 +20,6 @@
         </div>
       </nav>
     </header>
-    {% endif %}
     {% endif %}
     <div id="grid-wrapper">
       <article>

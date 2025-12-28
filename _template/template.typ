@@ -81,9 +81,6 @@
     html.meta(name: "identifier", content: identifier)
     html.meta(name: "author", content: author)
     html.meta(name: "date", content: date.display("[year]-[month]-[day]T[hour]:[minute]:[second]Z"))
-    if identifier == "index" {
-      html.meta(name: "hide:home")
-    }
     html.title(plain-text(title))
   })
 }

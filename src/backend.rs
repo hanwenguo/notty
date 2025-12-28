@@ -25,7 +25,6 @@ struct ProcessedNote {
     body_html: String,
     metadata: HashMap<String, String>,
     title: Option<String>,
-    hide_ids: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -36,7 +35,6 @@ struct NoteTemplateContext<'a> {
     head: &'a str,
     content: &'a str,
     backmatter: &'a str,
-    hide: &'a [String],
 }
 
 #[derive(Serialize)]
@@ -123,7 +121,6 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             head: processed.head_html.as_str(),
             content: processed.body_html.as_str(),
             backmatter: backmatter_html.as_str(),
-            hide: processed.hide_ids.as_slice(),
         };
         let site_context = site_template_context(&build_config.site);
         let mut context = Context::new();
@@ -162,13 +159,11 @@ fn process_note(
     let head_html = render_note_head(note)?;
     let metadata = extract_metadata(note)?;
     let title = extract_note_title(note, &metadata)?;
-    let hide_ids = extract_hide_template_ids(note)?;
     Ok(ProcessedNote {
         head_html,
         body_html,
         metadata,
         title,
-        hide_ids,
     })
 }
 
@@ -351,28 +346,6 @@ fn extract_note_title(
     }
 
     Ok(None)
-}
-
-fn extract_hide_template_ids(note: &Note) -> StrResult<Vec<String>> {
-    let selector = Selector::parse("head meta")
-        .map_err(|err| eco_format!("failed to parse selector head meta: {err}"))?;
-    let mut ids = HashSet::new();
-    for element in note.document.select(&selector) {
-        let name = match element.value().attr("name") {
-            Some(value) => value.trim(),
-            None => continue,
-        };
-        let Some(rest) = name.strip_prefix("hide:") else {
-            continue;
-        };
-        let id = rest.trim();
-        if !id.is_empty() {
-            ids.insert(id.to_string());
-        }
-    }
-    let mut out: Vec<String> = ids.into_iter().collect();
-    out.sort();
-    Ok(out)
 }
 
 fn collect_targets(document: &Html, tag: &str, path: &Path) -> StrResult<Vec<String>> {
