@@ -55,6 +55,12 @@ struct TransclusionTemplateContext<'a> {
 }
 
 #[derive(Serialize)]
+struct BackmatterSectionTemplateContext<'a> {
+    title: &'a str,
+    content: &'a str,
+}
+
+#[derive(Serialize)]
 struct SiteTemplateContext<'a> {
     root_dir: &'a str,
     trailing_slash: bool,
@@ -107,6 +113,7 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             .ok_or_else(|| eco_format!("missing processed note for {note_id}"))?;
         let backmatter_html = build_backmatter_html(
             note_id,
+            &note_ids,
             &backlinks,
             &contexts,
             &processed_notes,
@@ -503,6 +510,7 @@ where
 
 fn build_backmatter_html(
     note_id: &str,
+    note_ids: &HashSet<String>,
     backlinks: &HashMap<String, Vec<String>>,
     contexts: &HashMap<String, Vec<String>>,
     processed_notes: &HashMap<String, ProcessedNote>,
@@ -513,7 +521,7 @@ fn build_backmatter_html(
     if let Some(ids) = backlinks.get(note_id) {
         let section = render_backmatter_section(
             "Backlinks",
-            "backlinks",
+            note_ids,
             ids,
             processed_notes,
             templates,
@@ -524,7 +532,7 @@ fn build_backmatter_html(
     if let Some(ids) = contexts.get(note_id) {
         let section = render_backmatter_section(
             "Contexts",
-            "contexts",
+            note_ids,
             ids,
             processed_notes,
             templates,
@@ -537,48 +545,102 @@ fn build_backmatter_html(
 
 fn render_backmatter_section(
     title: &str,
-    class_name: &str,
-    note_ids: &[String],
+    note_ids: &HashSet<String>,
+    included_note_ids: &[String],
     processed_notes: &HashMap<String, ProcessedNote>,
     templates: &Tera,
     site: &SiteSettings,
 ) -> StrResult<String> {
-    if note_ids.is_empty() {
+    if included_note_ids.is_empty() {
         return Ok(String::new());
     }
 
-    let mut ids = note_ids.to_vec();
-    ids.sort();
+    let mut included_ids = included_note_ids.to_vec();
+    included_ids.sort();
 
-    let mut out = String::new();
-    out.push_str("<section class=\"backmatter ");
-    out.push_str(class_name);
-    out.push_str(" hide-metadata\">");
-    out.push_str("<header><h2>");
-    out.push_str(title);
-    out.push_str("</h2></header>");
-    out.push_str("<div class=\"backmatter-items\">");
+    let virtual_note_body = included_ids
+        .iter()
+        .map(|id| {
+            String::new()
+                + "<notty-transclusion target=\""
+                + id.as_str()
+                + "\" show-metadata=\"true\" expanded=\"false\" hide-numbering=\"true\" demote-headings=\"true\"></notty-transclusion>"
+        })
+        .collect::<String>();
 
-    for id in ids {
-        let processed = processed_notes
-            .get(&id)
-            .ok_or_else(|| eco_format!("backmatter note {id} is missing processed html"))?;
-        let content_html = prepare_transclusion_content(processed.body_html.as_str())?;
-        let transclusion = TransclusionTemplateContext {
-            target: id.as_str(),
-            show_metadata: true,
-            expanded: false,
-            hide_numbering: false,
-            demote_headings: true,
-            content: content_html.as_str(),
-        };
-        let transclusion_html = render_transclusion(templates, site, &transclusion)?;
-        out.push_str(&transclusion_html);
-    }
+    let virtual_note = Note {
+        id: String::new(), // unused
+        path: PathBuf::new(), // shouldn't be used
+        document: Html::parse_document(&format!(
+            "<html><head></head><body>{}</body></html>",
+            virtual_note_body
+        )),
+        transcludes: Vec::new(), // unused
+        links_out: included_ids, // unused
+    };
 
-    out.push_str("</div></section>");
+    let body_html = render_note_body(&virtual_note, processed_notes, note_ids, site, templates)?;
 
-    Ok(out)
+    let section_context = BackmatterSectionTemplateContext {
+        title,
+        content: body_html.as_str(),
+    };
+
+    let site_context = site_template_context(site);
+    let mut context = Context::new();
+    context.insert("backmatter_section", &section_context);
+    context.insert("site", &site_context);
+    let section = render_template(templates, "backmatter_section.html", &context)?;
+
+    let virtual_transclusion_context = TransclusionTemplateContext {
+        target: "", // unused
+        show_metadata: false,
+        expanded: true,
+        disable_numbering: true,
+        demote_headings: true,
+        content: section.as_str(),
+    };
+
+    let section = render_transclusion(templates, site, &virtual_transclusion_context)?;
+
+    Ok(section)
+
+    // if note_ids.is_empty() {
+    //     return Ok(String::new());
+    // }
+
+    // let mut ids = note_ids.to_vec();
+    // ids.sort();
+
+    // let mut out = String::new();
+    // out.push_str("<section class=\"backmatter ");
+    // out.push_str(class_name);
+    // out.push_str(" hide-metadata\">");
+    // out.push_str("<header><h2>");
+    // out.push_str(title);
+    // out.push_str("</h2></header>");
+    // out.push_str("<div class=\"backmatter-items\">");
+
+    // for id in ids {
+    //     let processed = processed_notes
+    //         .get(&id)
+    //         .ok_or_else(|| eco_format!("backmatter note {id} is missing processed html"))?;
+    //     let content_html = prepare_transclusion_content(processed.body_html.as_str())?;
+    //     let transclusion = TransclusionTemplateContext {
+    //         target: id.as_str(),
+    //         show_metadata: true,
+    //         expanded: false,
+    //         hide_numbering: false,
+    //         demote_headings: true,
+    //         content: content_html.as_str(),
+    //     };
+    //     let transclusion_html = render_transclusion(templates, site, &transclusion)?;
+    //     out.push_str(&transclusion_html);
+    // }
+
+    // out.push_str("</div></section>");
+
+    // Ok(out)
 }
 
 struct RenderContext<'a> {
