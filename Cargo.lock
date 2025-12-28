@@ -705,6 +705,7 @@ dependencies = [
  "ecow",
  "ego-tree",
  "figment",
+ "html5ever",
  "pathdiff",
  "scraper",
  "serde",

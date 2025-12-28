@@ -10,6 +10,7 @@ codespan-reporting = "0.13.1"
 color-print = "0.3.7"
 ecow = "0.2.5"
 ego-tree = "0.6.2"
+html5ever = "0.27.0"
 figment = { version = "0.10.8", features = ["toml"] }
 pathdiff = "0.2.3"
 scraper = "0.19.1"

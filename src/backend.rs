@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::error::StrResult;
 use ecow::eco_format;
 use ego_tree::{NodeId, NodeRef};
+use html5ever::{LocalName, Namespace, QualName};
 use scraper::{Html, Node, Selector};
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera, Value as TeraValue};
@@ -17,6 +18,14 @@ struct Note {
     document: Html,
     transcludes: Vec<String>,
     links_out: Vec<String>,
+}
+
+struct ProcessedNote {
+    head_html: String,
+    body_html: String,
+    metadata: HashMap<String, String>,
+    title: Option<String>,
+    hide_ids: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -63,34 +72,21 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
     let order = topo_sort_transclusions(&notes)?;
 
     let note_ids: HashSet<String> = notes.keys().cloned().collect();
-    let mut processed_bodies = HashMap::new();
-    let mut processed_heads = HashMap::new();
-    let mut note_metadata = HashMap::new();
-    let mut note_titles = HashMap::new();
-    let mut note_hide_ids = HashMap::new();
+    let mut processed_notes = HashMap::new();
 
     for note_id in &order {
         let note = notes
             .get(note_id)
             .ok_or_else(|| eco_format!("missing note {note_id} during processing"))?;
 
-        let body_html = render_note_body(
+        let processed_note = process_note(
             note,
-            &processed_bodies,
+            &processed_notes,
             &note_ids,
             &build_config.site,
             &templates,
         )?;
-        let head_html = render_note_head(note)?;
-        let metadata = extract_metadata(note)?;
-        let title = extract_note_title(note, &metadata)?;
-        let hide_ids = extract_hide_template_ids(note)?;
-
-        processed_bodies.insert(note_id.clone(), body_html);
-        processed_heads.insert(note_id.clone(), head_html);
-        note_metadata.insert(note_id.clone(), metadata);
-        note_titles.insert(note_id.clone(), title);
-        note_hide_ids.insert(note_id.clone(), hide_ids);
+        processed_notes.insert(note_id.clone(), processed_note);
     }
 
     let backlinks = compute_backlinks(&notes);
@@ -108,45 +104,28 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
     }
 
     for (note_id, note) in &notes {
-        let head_html = processed_heads
+        let processed = processed_notes
             .get(note_id)
-            .ok_or_else(|| eco_format!("missing head html for {note_id}"))?;
-        let body_html = processed_bodies
-            .get(note_id)
-            .ok_or_else(|| eco_format!("missing body html for {note_id}"))?;
-        let metadata = note_metadata
-            .get(note_id)
-            .ok_or_else(|| eco_format!("missing metadata for {note_id}"))?;
-        let title = note_titles
-            .get(note_id)
-            .ok_or_else(|| eco_format!("missing title for {note_id}"))?
-            .as_deref();
+            .ok_or_else(|| eco_format!("missing processed note for {note_id}"))?;
         let backmatter_html = build_backmatter_html(
             note_id,
             &backlinks,
             &contexts,
-            &processed_bodies,
+            &processed_notes,
             &templates,
             &build_config.site,
         )?;
 
-        let hidden = note_hide_ids
-            .get(note_id)
-            .ok_or_else(|| eco_format!("missing template hide list for {note_id}"))?;
         let note_context = NoteTemplateContext {
             id: note_id.as_str(),
-            title,
-            metadata,
-            head: head_html.as_str(),
-            content: body_html.as_str(),
+            title: processed.title.as_deref(),
+            metadata: &processed.metadata,
+            head: processed.head_html.as_str(),
+            content: processed.body_html.as_str(),
             backmatter: backmatter_html.as_str(),
-            hide: hidden.as_slice(),
+            hide: processed.hide_ids.as_slice(),
         };
-        let site_context = SiteTemplateContext {
-            root_dir: build_config.site.root_dir.as_str(),
-            trailing_slash: build_config.site.trailing_slash,
-            domain: build_config.site.domain.as_deref(),
-        };
+        let site_context = site_template_context(&build_config.site);
         let mut context = Context::new();
         context.insert("note", &note_context);
         context.insert("site", &site_context);
@@ -172,6 +151,27 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
     Ok(())
 }
 
+fn process_note(
+    note: &Note,
+    processed_notes: &HashMap<String, ProcessedNote>,
+    note_ids: &HashSet<String>,
+    site: &SiteSettings,
+    templates: &Tera,
+) -> StrResult<ProcessedNote> {
+    let body_html = render_note_body(note, processed_notes, note_ids, site, templates)?;
+    let head_html = render_note_head(note)?;
+    let metadata = extract_metadata(note)?;
+    let title = extract_note_title(note, &metadata)?;
+    let hide_ids = extract_hide_template_ids(note)?;
+    Ok(ProcessedNote {
+        head_html,
+        body_html,
+        metadata,
+        title,
+        hide_ids,
+    })
+}
+
 fn load_templates() -> StrResult<Tera> {
     let pattern = ".notty/templates/**/*.html";
     let mut tera = Tera::new(pattern)
@@ -189,6 +189,14 @@ fn render_template(templates: &Tera, name: &str, context: &Context) -> StrResult
         .map_err(|err| eco_format!("failed to render template {name}: {err}"))
 }
 
+fn site_template_context(site: &SiteSettings) -> SiteTemplateContext<'_> {
+    SiteTemplateContext {
+        root_dir: site.root_dir.as_str(),
+        trailing_slash: site.trailing_slash,
+        domain: site.domain.as_deref(),
+    }
+}
+
 fn render_internal_link(
     templates: &Tera,
     site: &SiteSettings,
@@ -201,11 +209,7 @@ fn render_internal_link(
         text,
         href: href.as_str(),
     };
-    let site_context = SiteTemplateContext {
-        root_dir: site.root_dir.as_str(),
-        trailing_slash: site.trailing_slash,
-        domain: site.domain.as_deref(),
-    };
+    let site_context = site_template_context(site);
     let mut context = Context::new();
     context.insert("link", &link);
     context.insert("site", &site_context);
@@ -217,11 +221,7 @@ fn render_transclusion(
     site: &SiteSettings,
     transclusion: &TransclusionTemplateContext,
 ) -> StrResult<String> {
-    let site_context = SiteTemplateContext {
-        root_dir: site.root_dir.as_str(),
-        trailing_slash: site.trailing_slash,
-        domain: site.domain.as_deref(),
-    };
+    let site_context = site_template_context(site);
     let mut context = Context::new();
     context.insert("transclusion", transclusion);
     context.insert("site", &site_context);
@@ -460,7 +460,7 @@ fn visit(
 
 fn render_note_body(
     note: &Note,
-    processed_bodies: &HashMap<String, String>,
+    processed_notes: &HashMap<String, ProcessedNote>,
     note_ids: &HashSet<String>,
     site: &SiteSettings,
     templates: &Tera,
@@ -475,16 +475,11 @@ fn render_note_body(
 
     let context = RenderContext {
         mode: RenderMode::Note {
-            processed_bodies,
+            processed_notes,
             note_ids,
             site,
             templates,
         },
-        hide_metadata_node: None,
-        hide_numbering_node: None,
-        collapse_details_node: None,
-        demote_headings: false,
-        heading_class: None,
         note_path: Some(&note.path),
     };
 
@@ -502,11 +497,6 @@ fn render_note_head(note: &Note) -> StrResult<String> {
 
     let context = RenderContext {
         mode: RenderMode::Fragment,
-        hide_metadata_node: None,
-        hide_numbering_node: None,
-        collapse_details_node: None,
-        demote_headings: false,
-        heading_class: None,
         note_path: None,
     };
 
@@ -514,32 +504,27 @@ fn render_note_head(note: &Note) -> StrResult<String> {
 }
 
 fn compute_backlinks(notes: &HashMap<String, Note>) -> HashMap<String, Vec<String>> {
-    let mut backlinks: HashMap<String, HashSet<String>> = HashMap::new();
-    for (source_id, note) in notes {
-        for target in &note.links_out {
-            backlinks
-                .entry(target.clone())
-                .or_default()
-                .insert(source_id.clone());
-        }
-    }
-    backlinks
-        .into_iter()
-        .map(|(key, value)| (key, value.into_iter().collect()))
-        .collect()
+    compute_reverse_index(notes, |note| &note.links_out)
 }
 
 fn compute_contexts(notes: &HashMap<String, Note>) -> HashMap<String, Vec<String>> {
-    let mut contexts: HashMap<String, HashSet<String>> = HashMap::new();
+    compute_reverse_index(notes, |note| &note.transcludes)
+}
+
+fn compute_reverse_index<F>(notes: &HashMap<String, Note>, edges: F) -> HashMap<String, Vec<String>>
+where
+    F: Fn(&Note) -> &[String],
+{
+    let mut index: HashMap<String, HashSet<String>> = HashMap::new();
     for (source_id, note) in notes {
-        for target in &note.transcludes {
-            contexts
+        for target in edges(note) {
+            index
                 .entry(target.clone())
                 .or_default()
                 .insert(source_id.clone());
         }
     }
-    contexts
+    index
         .into_iter()
         .map(|(key, value)| (key, value.into_iter().collect()))
         .collect()
@@ -549,7 +534,7 @@ fn build_backmatter_html(
     note_id: &str,
     backlinks: &HashMap<String, Vec<String>>,
     contexts: &HashMap<String, Vec<String>>,
-    processed_bodies: &HashMap<String, String>,
+    processed_notes: &HashMap<String, ProcessedNote>,
     templates: &Tera,
     site: &SiteSettings,
 ) -> StrResult<String> {
@@ -559,7 +544,7 @@ fn build_backmatter_html(
             "Backlinks",
             "backlinks",
             ids,
-            processed_bodies,
+            processed_notes,
             templates,
             site,
         )?;
@@ -570,7 +555,7 @@ fn build_backmatter_html(
             "Contexts",
             "contexts",
             ids,
-            processed_bodies,
+            processed_notes,
             templates,
             site,
         )?;
@@ -583,7 +568,7 @@ fn render_backmatter_section(
     title: &str,
     class_name: &str,
     note_ids: &[String],
-    processed_bodies: &HashMap<String, String>,
+    processed_notes: &HashMap<String, ProcessedNote>,
     templates: &Tera,
     site: &SiteSettings,
 ) -> StrResult<String> {
@@ -604,10 +589,10 @@ fn render_backmatter_section(
     out.push_str("<div class=\"backmatter-items\">");
 
     for id in ids {
-        let body_html = processed_bodies
+        let processed = processed_notes
             .get(&id)
             .ok_or_else(|| eco_format!("backmatter note {id} is missing processed html"))?;
-        let content_html = prepare_transclusion_content(body_html)?;
+        let content_html = prepare_transclusion_content(processed.body_html.as_str())?;
         let transclusion = TransclusionTemplateContext {
             target: id.as_str(),
             show_metadata: true,
@@ -627,17 +612,12 @@ fn render_backmatter_section(
 
 struct RenderContext<'a> {
     mode: RenderMode<'a>,
-    hide_metadata_node: Option<NodeId>,
-    hide_numbering_node: Option<NodeId>,
-    collapse_details_node: Option<NodeId>,
-    demote_headings: bool,
-    heading_class: Option<&'a str>,
     note_path: Option<&'a Path>,
 }
 
 enum RenderMode<'a> {
     Note {
-        processed_bodies: &'a HashMap<String, String>,
+        processed_notes: &'a HashMap<String, ProcessedNote>,
         note_ids: &'a HashSet<String>,
         site: &'a SiteSettings,
         templates: &'a Tera,
@@ -685,7 +665,7 @@ fn render_element(
 
     match &context.mode {
         RenderMode::Note {
-            processed_bodies,
+            processed_notes,
             note_ids,
             site,
             templates,
@@ -716,7 +696,7 @@ fn render_element(
                     )
                 })?;
                 let target = normalize_target(target_raw);
-                let body_html = processed_bodies.get(&target).ok_or_else(|| {
+                let body_html = processed_notes.get(&target).ok_or_else(|| {
                     eco_format!(
                         "transclusion target {target} referenced by {} is not processed yet",
                         path_display(context)
@@ -726,7 +706,7 @@ fn render_element(
                 let expanded = parse_bool_attr(element.attr("expanded"), true);
                 let hide_numbering = parse_bool_attr(element.attr("hide-numbering"), false);
                 let demote_headings = parse_bool_attr(element.attr("demote-headings"), true);
-                let content_html = prepare_transclusion_content(body_html)?;
+                let content_html = prepare_transclusion_content(body_html.body_html.as_str())?;
                 let transclusion = TransclusionTemplateContext {
                     target: target.as_str(),
                     show_metadata,
@@ -749,29 +729,24 @@ fn render_element(
         }
     }
 
-    let (attrs, is_void) = build_attributes(element, context, node.id());
-    let render_tag = if context.demote_headings {
-        demote_heading_tag(tag).unwrap_or(tag)
-    } else {
-        tag
-    };
+    let (attrs, is_void) = build_attributes(element);
 
     if tag.eq_ignore_ascii_case("script") || tag.eq_ignore_ascii_case("style") {
         let mut out = String::new();
         out.push('<');
-        out.push_str(render_tag);
+        out.push_str(tag);
         out.push_str(&attrs);
         out.push('>');
         out.push_str(&render_raw_children(node, context)?);
         out.push_str("</");
-        out.push_str(render_tag);
+        out.push_str(tag);
         out.push('>');
         return Ok(out);
     }
 
     let mut out = String::new();
     out.push('<');
-    out.push_str(render_tag);
+    out.push_str(tag);
     out.push_str(&attrs);
 
     if is_void {
@@ -782,121 +757,32 @@ fn render_element(
     out.push('>');
     out.push_str(&render_children(node, context)?);
     out.push_str("</");
-    out.push_str(render_tag);
+    out.push_str(tag);
     out.push('>');
 
     Ok(out)
 }
 
-fn build_attributes(
-    element: &scraper::node::Element,
-    context: &RenderContext,
-    node_id: NodeId,
-) -> (String, bool) {
-    let mut attrs = Vec::new();
-    let mut class_value: Option<String> = None;
+fn build_attributes(element: &scraper::node::Element) -> (String, bool) {
     let is_void = is_void_element(element.name());
 
-    for (name, value) in element.attrs() {
-        if context
-            .collapse_details_node
-            .is_some_and(|target| target == node_id)
-            && name.eq_ignore_ascii_case("open")
-        {
-            continue;
-        }
-
-        if name.eq_ignore_ascii_case("class") {
-            class_value = Some(value.to_string());
-            continue;
-        }
-
-        attrs.push((name.to_string(), value.to_string()));
-    }
-
-    if context
-        .hide_metadata_node
-        .is_some_and(|target| target == node_id)
-    {
-        add_class(&mut class_value, "hide-metadata");
-    }
-
-    if context
-        .hide_numbering_node
-        .is_some_and(|target| target == node_id)
-    {
-        add_class(&mut class_value, "hide-numbering");
-    }
-
-    if let Some(heading_class) = context.heading_class
-        && is_heading_tag(element.name())
-    {
-        add_class(&mut class_value, heading_class);
-    }
-
-    if let Some(class_val) = class_value {
-        attrs.push(("class".to_string(), class_val));
-    }
-
     let mut out = String::new();
-    for (name, value) in attrs {
+    for (name, value) in element.attrs() {
         out.push(' ');
-        out.push_str(&name);
+        out.push_str(name);
         out.push_str("=\"");
-        out.push_str(&escape_attr(&value));
+        out.push_str(&escape_attr(value));
         out.push('"');
     }
 
     (out, is_void)
 }
 
-fn render_fragment_with_options(
-    html: &str,
-    show_metadata: bool,
-    expanded: bool,
-    hide_numbering: bool,
-    demote_headings: bool,
-) -> StrResult<String> {
-    let fragment = Html::parse_fragment(html);
-    let root = fragment.tree.root();
-
-    let first_element = find_first_element(root);
-    let hide_metadata_node = if show_metadata { None } else { first_element };
-    let hide_numbering_node = if hide_numbering { first_element } else { None };
-
-    let collapse_details_node = if expanded {
-        None
-    } else {
-        find_first_element_by_tag(root, "details")
-    };
-
+fn render_fragment(root: NodeRef<Node>) -> StrResult<String> {
     let context = RenderContext {
         mode: RenderMode::Fragment,
-        hide_metadata_node,
-        hide_numbering_node,
-        collapse_details_node,
-        demote_headings,
-        heading_class: None,
         note_path: None,
     };
-
-    render_children(root, &context)
-}
-
-fn render_fragment_with_heading_class(html: &str, class_name: &str) -> StrResult<String> {
-    let fragment = Html::parse_fragment(html);
-    let root = fragment.tree.root();
-
-    let context = RenderContext {
-        mode: RenderMode::Fragment,
-        hide_metadata_node: None,
-        hide_numbering_node: None,
-        collapse_details_node: None,
-        demote_headings: false,
-        heading_class: Some(class_name),
-        note_path: None,
-    };
-
     render_children(root, &context)
 }
 
@@ -923,6 +809,44 @@ fn find_first_element_by_tag(root: NodeRef<Node>, tag: &str) -> Option<NodeId> {
     None
 }
 
+fn with_element_mut<F>(fragment: &mut Html, node_id: NodeId, f: F)
+where
+    F: FnOnce(&mut scraper::node::Element),
+{
+    if let Some(mut node) = fragment.tree.get_mut(node_id)
+        && let Node::Element(element) = node.value()
+    {
+        f(element);
+    }
+}
+
+fn set_attr(element: &mut scraper::node::Element, name: &str, value: &str) {
+    let existing_key = element
+        .attrs
+        .keys()
+        .find(|key| key.local.as_ref() == name)
+        .cloned();
+    let key = existing_key
+        .unwrap_or_else(|| QualName::new(None, Namespace::from(""), LocalName::from(name)));
+    element.attrs.insert(key, value.to_string().into());
+}
+
+fn remove_attr(element: &mut scraper::node::Element, name: &str) {
+    element.attrs.retain(|key, _| key.local.as_ref() != name);
+}
+
+fn add_class_to_element(element: &mut scraper::node::Element, class: &str) {
+    let mut class_value = element
+        .attrs
+        .iter()
+        .find(|(key, _)| key.local.as_ref() == "class")
+        .map(|(_, value)| value.to_string());
+    add_class(&mut class_value, class);
+    if let Some(value) = class_value {
+        set_attr(element, "class", &value);
+    }
+}
+
 fn parse_bool_attr(value: Option<&str>, default: bool) -> bool {
     match value {
         Some(v) if v.eq_ignore_ascii_case("true") => true,
@@ -939,8 +863,18 @@ fn notty_hide_metadata_filter(
     let html = value
         .as_str()
         .ok_or_else(|| TeraError::msg("notty_hide_metadata expects a string value"))?;
-    let rendered = render_fragment_with_options(html, false, true, false, false)
-        .map_err(|err| TeraError::msg(err.to_string()))?;
+    let mut fragment = Html::parse_fragment(html);
+    let target = {
+        let root = fragment.tree.root();
+        find_first_element(root)
+    };
+    if let Some(target) = target {
+        with_element_mut(&mut fragment, target, |element| {
+            add_class_to_element(element, "hide-metadata");
+        });
+    }
+    let rendered =
+        render_fragment(fragment.tree.root()).map_err(|err| TeraError::msg(err.to_string()))?;
     Ok(TeraValue::String(rendered))
 }
 
@@ -951,8 +885,26 @@ fn notty_hide_numbering_filter(
     let html = value
         .as_str()
         .ok_or_else(|| TeraError::msg("notty_hide_numbering expects a string value"))?;
-    let rendered = render_fragment_with_heading_class(html, "hide-numbering")
-        .map_err(|err| TeraError::msg(err.to_string()))?;
+    let mut fragment = Html::parse_fragment(html);
+    let headings = {
+        let root = fragment.tree.root();
+        let mut headings = Vec::new();
+        for node in root.descendants() {
+            if let Some(element) = node.value().as_element()
+                && is_heading_tag(element.name())
+            {
+                headings.push(node.id());
+            }
+        }
+        headings
+    };
+    for node_id in headings {
+        with_element_mut(&mut fragment, node_id, |element| {
+            add_class_to_element(element, "hide-numbering");
+        });
+    }
+    let rendered =
+        render_fragment(fragment.tree.root()).map_err(|err| TeraError::msg(err.to_string()))?;
     Ok(TeraValue::String(rendered))
 }
 
@@ -963,8 +915,18 @@ fn notty_collapse_details_filter(
     let html = value
         .as_str()
         .ok_or_else(|| TeraError::msg("notty_collapse_details expects a string value"))?;
-    let rendered = render_fragment_with_options(html, true, false, false, false)
-        .map_err(|err| TeraError::msg(err.to_string()))?;
+    let mut fragment = Html::parse_fragment(html);
+    let target = {
+        let root = fragment.tree.root();
+        find_first_element_by_tag(root, "details")
+    };
+    if let Some(target) = target {
+        with_element_mut(&mut fragment, target, |element| {
+            remove_attr(element, "open");
+        });
+    }
+    let rendered =
+        render_fragment(fragment.tree.root()).map_err(|err| TeraError::msg(err.to_string()))?;
     Ok(TeraValue::String(rendered))
 }
 
@@ -975,8 +937,26 @@ fn notty_demote_headings_filter(
     let html = value
         .as_str()
         .ok_or_else(|| TeraError::msg("notty_demote_headings expects a string value"))?;
-    let rendered = render_fragment_with_options(html, true, true, false, true)
-        .map_err(|err| TeraError::msg(err.to_string()))?;
+    let mut fragment = Html::parse_fragment(html);
+    let headings = {
+        let root = fragment.tree.root();
+        let mut headings = Vec::new();
+        for node in root.descendants() {
+            if let Some(element) = node.value().as_element()
+                && let Some(demoted) = demote_heading_tag(element.name())
+            {
+                headings.push((node.id(), LocalName::from(demoted)));
+            }
+        }
+        headings
+    };
+    for (node_id, demoted) in headings {
+        with_element_mut(&mut fragment, node_id, |element| {
+            element.name.local = demoted;
+        });
+    }
+    let rendered =
+        render_fragment(fragment.tree.root()).map_err(|err| TeraError::msg(err.to_string()))?;
     Ok(TeraValue::String(rendered))
 }
 
