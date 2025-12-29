@@ -68,6 +68,7 @@ wb compile \
 
 After the above features are implemented, Weibian will be feature-comparable to Forester. There are also some other nice-to-have features:
 
+- Include/exclude notes based on glob patterns
 - Out-of-the-box dark mode support
 - Watch mode for live updates
 - Pre-processing hook on source files (this can enable generating PDFs, for example)
