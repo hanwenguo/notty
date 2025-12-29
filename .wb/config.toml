@@ -7,5 +7,5 @@ cache_dir = ".wb/cache"
 
 [site]
 domain = "https://hanwenguo.github.io" # the domain of the site; used for generating absolute URLs
-root_dir = "/" # the root directory of the site; for example, if the site is hosted at example.com/notes/, set root_dir = "/notes/"; if hosted at the root domain, set root_dir = "/"
+root_dir = "/weibian/" # the root directory of the site; for example, if the site is hosted at example.com/notes/, set root_dir = "/notes/"; if hosted at the root domain, set root_dir = "/"
 trailing_slash = true # if true, the final URL of each note will have a trailing slash
