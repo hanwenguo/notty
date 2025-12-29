@@ -32,6 +32,8 @@
           {{ note.backmatter | safe }}
         </footer>
       </article>
+      {% set heading_count = note.toc.0.children | length %}
+      {% if heading_count != 0 %}
       <nav id="toc">
         <div class="block">
           <h1>Table of Contents</h1>
@@ -71,6 +73,7 @@
           {% endfor %}
         </div>
       </nav>
+      {% endif %}
     </div>
   </body>
 </html>
