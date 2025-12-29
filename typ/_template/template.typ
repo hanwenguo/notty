@@ -55,7 +55,7 @@
           let href = if inline {
             "#" + identifier
           } else {
-            site.config.root-path + identifier + (if site.wb-config.site.trailing_slash { "/" } else { ".html" })
+            site.config.root-path + identifier + (if site.config.trailing-slash { "/" } else { ".html" })
           }
           html.a(class: "slug", href: href, "[" + identifier + "]")
         }

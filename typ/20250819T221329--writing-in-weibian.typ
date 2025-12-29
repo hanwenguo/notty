@@ -60,14 +60,16 @@ Along all the rendering process, a `site` context (`site.root_dir`, `site.traili
 )[
 Weibian supports a `.weibian/config.toml` configuration file to allow users to set project options such as input/output directories, public assets directory, and other preferences. CLI flags override config values.
 
-The following is an example  configuration file:
+The following is an example configuration file:
 
 ```toml
-[directories]
+[files]
 input_dir = "typ"
 output_dir = "dist"
 public_dir = "public"
 # cache_dir = ".wb/cache" # optional; defaults to a project-specific temp dir if omitted
+# include = ["**/*.typ"]  # optional; defaults to all files in input_dir
+# exclude = ["draft-*"]   # optional; exclude has priority over include
 # the above is the equivalent of the corresponding CLI flags
 
 [site]

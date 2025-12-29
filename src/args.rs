@@ -225,7 +225,7 @@ pub struct SiteArgs {
 #[derive(Debug, Clone, Args)]
 pub struct WorldArgs {
     /// Configures the project root (for absolute paths).
-    #[clap(long = "root", env = "WEIBIAN_ROOT", value_name = "DIR", value_hint = ValueHint::DirPath, default_value = ".")]
+    #[clap(long = "root", env = "WEIBIAN_ROOT", value_name = "DIR", value_hint = ValueHint::DirPath)]
     pub root: Option<PathBuf>,
 
     /// Add a string key-value pair visible through `sys.inputs`.

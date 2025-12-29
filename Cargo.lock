@@ -1429,6 +1429,7 @@ dependencies = [
  "ecow",
  "ego-tree",
  "figment",
+ "globset",
  "html5ever",
  "pathdiff",
  "scraper",

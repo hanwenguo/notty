@@ -6,10 +6,9 @@
     name: "John Doe",
     id: "john-doe",
   ),
+  trailing-slash: true,
   math-fonts: ("IBM Plex Math",),
 )
-
-#let wb-config = toml("../.wb/config.toml")
 
 #let html-metadata-taxon-map = (
   :

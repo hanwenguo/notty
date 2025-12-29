@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -25,7 +26,7 @@ pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
         )
     })?;
 
-    let mut compiled_any = false;
+    let mut sources = Vec::new();
     for entry in entries {
         let entry =
             entry.map_err(|err| eco_format!("failed to read input directory entry: {err}"))?;
@@ -33,16 +34,31 @@ pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
         if path.extension().and_then(|ext| ext.to_str()) != Some("typ") {
             continue;
         }
-        compiled_any = true;
-        compile_typst_file(build_config, &path, output_dir)?;
+        let relative = path.strip_prefix(input_dir).unwrap_or(&path);
+        if !build_config.input_filters.allows(relative) {
+            continue;
+        }
+        sources.push(path);
     }
 
-    if !compiled_any {
+    if sources.is_empty() {
+        if build_config.input_filters.has_filters() {
+            return Err(eco_format!(
+                "no .typ files matched input include/exclude patterns in input directory {}",
+                input_dir.display()
+            ));
+        }
         return Err(eco_format!(
             "no .typ files found in input directory {}",
             input_dir.display()
         ));
     }
+
+    for source in &sources {
+        compile_typst_file(build_config, source, output_dir)?;
+    }
+
+    clean_html_cache(output_dir, &sources)?;
 
     Ok(output_dir.clone())
 }
@@ -52,11 +68,7 @@ fn compile_typst_file(
     source: &Path,
     output_dir: &Path,
 ) -> StrResult<()> {
-    let file_stem = source
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .ok_or_else(|| eco_format!("invalid input filename {}", source.display()))?;
-    let output_path = output_dir.join(format!("{file_stem}.html"));
+    let output_path = html_output_path(source, output_dir)?;
 
     let root = build_config
         .world
@@ -111,6 +123,52 @@ fn compile_typst_file(
             source.display(),
             String::from_utf8_lossy(&output.stderr)
         ));
+    }
+
+    Ok(())
+}
+
+fn html_output_path(source: &Path, output_dir: &Path) -> StrResult<PathBuf> {
+    let file_stem = source
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .ok_or_else(|| eco_format!("invalid input filename {}", source.display()))?;
+    Ok(output_dir.join(format!("{file_stem}.html")))
+}
+
+fn clean_html_cache(output_dir: &Path, sources: &[PathBuf]) -> StrResult<()> {
+    let mut expected = HashSet::new();
+    for source in sources {
+        let output_path = html_output_path(source, output_dir)?;
+        if let Some(name) = output_path.file_name().and_then(|name| name.to_str()) {
+            expected.insert(name.to_string());
+        }
+    }
+
+    let entries = fs::read_dir(output_dir).map_err(|err| {
+        eco_format!(
+            "failed to read html cache directory {}: {err}",
+            output_dir.display()
+        )
+    })?;
+
+    for entry in entries {
+        let entry = entry.map_err(|err| eco_format!("failed to read html cache entry: {err}"))?;
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) != Some("html") {
+            continue;
+        }
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if !expected.contains(name) {
+            fs::remove_file(&path).map_err(|err| {
+                eco_format!(
+                    "failed to remove stale html cache file {}: {err}",
+                    path.display()
+                )
+            })?;
+        }
     }
 
     Ok(())
