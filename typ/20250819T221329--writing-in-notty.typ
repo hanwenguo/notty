@@ -27,7 +27,22 @@ After this step, there should be no remaining `<notty-internal-link>` elements i
 
 Then, backmatters are generated for each note. As for now, Notty supports two types of backmatter sections: backlinks and contexts. A backlink from note A to note B exists if note B links to note A via an internal link. A context for note A is defined as any note that directly transcludes note A. The content of each backmatter section is produced by transcluding a virtual note that in turn transcludes all notes relevant to that backmatter section with options `show-metadata="true"`, `expanded="false"`, `disable-numbering="true"`, and `demote-headings="true"`; these virtual notes do not exist as actual files, but are constructed on-the-fly during backend processing, and this wouldn't affect the transclusion graph. Then, each backmatter section is rendered via the `backmatter_section.html` template, which is provided with a `backmatter_section` context (`backmatter_section.title`, `backmatter_section.content`). The `backmatter_section.title` is the title of the backmatter section (e.g., "Backlinks", "Contexts"), while `backmatter_section.content` is the raw HTML of the body of the virtual note described above.
 
-Finally, the final HTML file for each note will be constructed. The template for that is `note.html`. It receives a `note` context (`note.id`, `note.title`, `note.metadata`, `note.head`, `note.content`, `note.backmatter`) and a `site` context (`site.root_dir`, `site.trailing_slash`, `site.domain`). `note.id` and `note.title` are extracted from the corresponding `<meta>` tags, provided for convenience.  The `note.metadata` is a map of metadata key-value pairs extracted from `<meta>` tags with `name` and `content` attributes in the `<head>` section of the intermediate HTML file. The `note.head` is the raw HTML content of the `<head>` section of the intermediate HTML file. `note.content` is the processed content of the `<body>` section of the intermediate HTML file, with all transclusions and internal links resolved as described above. `note.backmatter` is the raw HTML content of the backmatter sections generated also as described above.
+Finally, the final HTML file for each note will be constructed. The template for that is `note.html`. It receives a `note` context (`note.id`, `note.title`, `note.metadata`, `note.head`, `note.content`, `note.toc`, `note.backmatter`). `note.id` and `note.title` are extracted from the corresponding `<meta>` tags, provided for convenience.  The `note.metadata` is a map of metadata key-value pairs extracted from `<meta>` tags with `name` and `content` attributes in the `<head>` section of the intermediate HTML file. The `note.head` is the raw HTML content of the `<head>` section of the intermediate HTML file. `note.content` is the processed content of the `<body>` section of the intermediate HTML file, with all transclusions and internal links resolved as described above. `note.backmatter` is the raw HTML content of the backmatter sections generated also as described above. The `toc` field is an array of `Heading` objects, where each `Heading` object has the following structure:
+
+```
+// The hX level
+level: 1 | 2 | 3 | 4 | 5 | 6;
+// The `id` attribute of the heading tag
+id: String;
+// The inner HTML of the heading tag
+content: String;
+// Whether the heading has the "disable-numbering" class
+disable_numbering: Bool;
+// All lower level headers below this header
+children: Array<Heading>;
+```
+
+Along all the rendering process, a `site` context (`site.root_dir`, `site.trailing_slash`, `site.domain`) is also provided to all templates to help with link generation and other site-wide settings.
 ]
 
 #inline-tree(
