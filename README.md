@@ -59,10 +59,21 @@ notty compile \
 
 ## Planned
 
-- TOC
-- Bibliography support
-- Flexible metadata handling
+- TOC generation
+- Bibliography support; most importantly, the References backmatter section
+
+Notty plans to release v1.0 after implementing the above two features. 
+
+- Customizable post-processing hooks
+- Datalog-based querying of notes
+- Generalized backmatter
+
+After the above features are implemented, Notty will be feature-comparable to Forester. There are also some other nice-to-have features:
+
+- Out-of-the-box dark mode support
 - Watch mode for live updates
+- Pre-processing hook on source files (this can enable generating PDFs, for example)
+- More templating support
 - Parallel processing of notes
 
 ## Differences from Simalar Projects
