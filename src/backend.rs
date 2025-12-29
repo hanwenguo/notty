@@ -28,6 +28,14 @@ struct ProcessedNote {
 }
 
 #[derive(Serialize)]
+struct Heading {
+    level: u8,
+    id: String,
+    content: String,
+    children: Vec<Heading>,
+}
+
+#[derive(Serialize)]
 struct NoteTemplateContext<'a> {
     id: &'a str,
     title: Option<&'a str>,
@@ -35,6 +43,7 @@ struct NoteTemplateContext<'a> {
     head: &'a str,
     content: &'a str,
     backmatter: &'a str,
+    toc: &'a [Heading],
 }
 
 #[derive(Serialize)]
@@ -120,6 +129,7 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             &templates,
             &build_config.site,
         )?;
+        let toc = build_toc(processed.body_html.as_str())?;
 
         let note_context = NoteTemplateContext {
             id: note_id.as_str(),
@@ -128,6 +138,7 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             head: processed.head_html.as_str(),
             content: processed.body_html.as_str(),
             backmatter: backmatter_html.as_str(),
+            toc: &toc,
         };
         let site_context = site_template_context(&build_config.site);
         let mut context = Context::new();
@@ -481,6 +492,79 @@ fn render_note_head(note: &Note) -> StrResult<String> {
     render_children(*head, &context)
 }
 
+struct HeadingRef {
+    path: Vec<usize>,
+    level: u8,
+}
+
+fn build_toc(body_html: &str) -> StrResult<Vec<Heading>> {
+    let mut toc: Vec<Heading> = Vec::new();
+    let mut stack: Vec<HeadingRef> = Vec::new();
+
+    let context = RenderContext {
+        mode: RenderMode::Fragment,
+        note_path: None,
+    };
+
+    let selector = Selector::parse("h1, h2, h3, h4, h5, h6")
+        .map_err(|err| eco_format!("failed to parse selector for headings: {err}"))?;
+    let fragment = Html::parse_fragment(body_html);
+    for heading in fragment.select(&selector) {
+        let element = heading.value();
+        let level = heading_level(element.name()).ok_or_else(|| {
+            eco_format!("invalid heading tag {} in TOC generation", element.name())
+        })?;
+        let id = element.attr("id").unwrap_or("").to_string();
+        let content = render_children(*heading, &context)?;
+        let heading = Heading {
+            level,
+            id,
+            content,
+            children: Vec::new(),
+        };
+
+        while let Some(last) = stack.last() {
+            if level > last.level {
+                break;
+            }
+            stack.pop();
+        }
+
+        let parent_path = stack.last().map(|item| item.path.as_slice());
+        let path = push_heading(&mut toc, parent_path, heading)?;
+        stack.push(HeadingRef { path, level });
+    }
+
+    Ok(toc)
+}
+
+fn push_heading(
+    toc: &mut Vec<Heading>,
+    parent_path: Option<&[usize]>,
+    heading: Heading,
+) -> StrResult<Vec<usize>> {
+    if let Some(path) = parent_path {
+        let parent =
+            get_heading_mut(toc, path).ok_or_else(|| eco_format!("invalid toc heading path"))?;
+        parent.children.push(heading);
+        let mut child_path = path.to_vec();
+        child_path.push(parent.children.len() - 1);
+        Ok(child_path)
+    } else {
+        toc.push(heading);
+        Ok(vec![toc.len() - 1])
+    }
+}
+
+fn get_heading_mut<'a>(headings: &'a mut [Heading], path: &[usize]) -> Option<&'a mut Heading> {
+    let (index, rest) = path.split_first()?;
+    let heading = headings.get_mut(*index)?;
+    if rest.is_empty() {
+        return Some(heading);
+    }
+    get_heading_mut(&mut heading.children, rest)
+}
+
 fn compute_backlinks(notes: &HashMap<String, Note>) -> HashMap<String, Vec<String>> {
     compute_reverse_index(notes, |note| &note.links_out)
 }
@@ -530,14 +614,8 @@ fn build_backmatter_html(
         sections.push_str(&section);
     }
     if let Some(ids) = contexts.get(note_id) {
-        let section = render_backmatter_section(
-            "Contexts",
-            note_ids,
-            ids,
-            processed_notes,
-            templates,
-            site,
-        )?;
+        let section =
+            render_backmatter_section("Contexts", note_ids, ids, processed_notes, templates, site)?;
         sections.push_str(&section);
     }
     Ok(sections)
@@ -569,7 +647,7 @@ fn render_backmatter_section(
         .collect::<String>();
 
     let virtual_note = Note {
-        id: String::new(), // unused
+        id: String::new(),    // unused
         path: PathBuf::new(), // shouldn't be used
         document: Html::parse_document(&format!(
             "<html><head></head><body>{}</body></html>",
@@ -967,6 +1045,18 @@ fn demote_heading_tag(tag: &str) -> Option<&'static str> {
         "h3" => Some("h4"),
         "h4" => Some("h5"),
         "h5" => Some("h6"),
+        _ => None,
+    }
+}
+
+fn heading_level(tag: &str) -> Option<u8> {
+    match tag.to_ascii_lowercase().as_str() {
+        "h1" => Some(1),
+        "h2" => Some(2),
+        "h3" => Some(3),
+        "h4" => Some(4),
+        "h5" => Some(5),
+        "h6" => Some(6),
         _ => None,
     }
 }

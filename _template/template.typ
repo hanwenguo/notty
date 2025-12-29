@@ -45,7 +45,7 @@
 ) = {
   html.summary(
     html.header({
-      html.elem("h" + str(level), {
+      html.elem("h" + str(level), attrs: (id: identifier), {
         if attrs.at("taxon", default: none) != none {
           html.span(class: "taxon", attrs.at("taxon"))
         }

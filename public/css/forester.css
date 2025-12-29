@@ -343,7 +343,11 @@ a.slug {
   box-shadow: none;
   text-decoration-line: underline;
   text-decoration-style: dotted;
- }
+}
+
+#toc a.slug {
+  display: none;
+}
 
 ninja-keys::part(ninja-action) {
   white-space: nowrap;
@@ -498,8 +502,6 @@ a {
 blockquote {
   font-style: italic;
 }
-
-
 
 address {
   display: inline;
