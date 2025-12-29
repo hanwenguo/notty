@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -27,6 +28,28 @@ struct ProcessedNote {
     title: Option<String>,
 }
 
+struct RenderedNote {
+    body_html: String,
+    citations: Vec<String>,
+    related: Vec<String>,
+}
+
+trait TransclusionLookup {
+    fn body_html(&self, id: &str) -> Option<&str>;
+}
+
+impl TransclusionLookup for HashMap<String, ProcessedNote> {
+    fn body_html(&self, id: &str) -> Option<&str> {
+        self.get(id).map(|note| note.body_html.as_str())
+    }
+}
+
+impl TransclusionLookup for HashMap<String, RenderedNote> {
+    fn body_html(&self, id: &str) -> Option<&str> {
+        self.get(id).map(|note| note.body_html.as_str())
+    }
+}
+
 #[derive(Serialize)]
 struct Heading {
     level: u8,
@@ -49,6 +72,13 @@ struct NoteTemplateContext<'a> {
 
 #[derive(Serialize)]
 struct LinkTemplateContext<'a> {
+    target: &'a str,
+    text: &'a str,
+    href: &'a str,
+}
+
+#[derive(Serialize)]
+struct CitationTemplateContext<'a> {
     target: &'a str,
     text: &'a str,
     href: &'a str,
@@ -93,18 +123,41 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             .get(note_id)
             .ok_or_else(|| eco_format!("missing note {note_id} during processing"))?;
 
-        let processed_note = process_note(
-            note,
-            &processed_notes,
-            &note_ids,
-            &build_config.site,
-            &templates,
-        )?;
+        let processed_note = process_note(note, &processed_notes, &build_config.site, &templates)?;
         processed_notes.insert(note_id.clone(), processed_note);
     }
 
     let backlinks = compute_backlinks(&notes);
     let contexts = compute_contexts(&notes);
+    let transcluded_descendants = compute_transcluded_descendants(&notes, &order);
+    let mut rendered_notes = HashMap::new();
+    for note_id in &order {
+        let note = notes
+            .get(note_id)
+            .ok_or_else(|| eco_format!("missing note {note_id} during rendering"))?;
+        let processed = processed_notes
+            .get(note_id)
+            .ok_or_else(|| eco_format!("missing processed note for {note_id}"))?;
+        let (body_html, mut citations, mut related) = render_links_in_body(
+            processed.body_html.as_str(),
+            Some(note.path.as_path()),
+            &note_ids,
+            &build_config.site,
+            &templates,
+        )?;
+        if let Some(excluded) = transcluded_descendants.get(note_id) {
+            citations.retain(|id| !excluded.contains(id));
+            related.retain(|id| !excluded.contains(id));
+        }
+        rendered_notes.insert(
+            note_id.clone(),
+            RenderedNote {
+                body_html,
+                citations,
+                related,
+            },
+        );
+    }
 
     fs::create_dir_all(output_dir).map_err(|err| {
         eco_format!(
@@ -121,23 +174,27 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
         let processed = processed_notes
             .get(note_id)
             .ok_or_else(|| eco_format!("missing processed note for {note_id}"))?;
+        let rendered = rendered_notes
+            .get(note_id)
+            .ok_or_else(|| eco_format!("missing rendered note for {note_id}"))?;
         let backmatter_html = build_backmatter_html(
             note_id,
-            &note_ids,
             &backlinks,
             &contexts,
-            &processed_notes,
+            rendered.citations.as_slice(),
+            rendered.related.as_slice(),
+            &rendered_notes,
             &templates,
             &build_config.site,
         )?;
-        let toc = build_toc(processed.body_html.as_str())?;
+        let toc = build_toc(rendered.body_html.as_str())?;
 
         let note_context = NoteTemplateContext {
             id: note_id.as_str(),
             title: processed.title.as_deref(),
             metadata: &processed.metadata,
             head: processed.head_html.as_str(),
-            content: processed.body_html.as_str(),
+            content: rendered.body_html.as_str(),
             backmatter: backmatter_html.as_str(),
             toc: &toc,
         };
@@ -170,11 +227,10 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
 fn process_note(
     note: &Note,
     processed_notes: &HashMap<String, ProcessedNote>,
-    note_ids: &HashSet<String>,
     site: &SiteSettings,
     templates: &Tera,
 ) -> StrResult<ProcessedNote> {
-    let body_html = render_note_body(note, processed_notes, note_ids, site, templates)?;
+    let body_html = render_note_body(note, processed_notes, site, templates)?;
     let head_html = render_note_head(note)?;
     let metadata = extract_metadata(note)?;
     let title = extract_note_title(note, &metadata)?;
@@ -226,6 +282,25 @@ fn render_internal_link(
     context.insert("link", &link);
     context.insert("site", &site_context);
     render_template(templates, "internal_link.html", &context)
+}
+
+fn render_citation(
+    templates: &Tera,
+    site: &SiteSettings,
+    target: &str,
+    text: &str,
+) -> StrResult<String> {
+    let href = build_note_href(target, site);
+    let citation = CitationTemplateContext {
+        target,
+        text,
+        href: href.as_str(),
+    };
+    let site_context = site_template_context(site);
+    let mut context = Context::new();
+    context.insert("citation", &citation);
+    context.insert("site", &site_context);
+    render_template(templates, "citation.html", &context)
 }
 
 fn render_transclusion(
@@ -450,8 +525,7 @@ fn visit(
 
 fn render_note_body(
     note: &Note,
-    processed_notes: &HashMap<String, ProcessedNote>,
-    note_ids: &HashSet<String>,
+    transclusion_lookup: &dyn TransclusionLookup,
     site: &SiteSettings,
     templates: &Tera,
 ) -> StrResult<String> {
@@ -464,9 +538,8 @@ fn render_note_body(
         .ok_or_else(|| eco_format!("missing <body> in {}", note.path.display()))?;
 
     let context = RenderContext {
-        mode: RenderMode::Note {
-            processed_notes,
-            note_ids,
+        mode: RenderMode::Transclusion {
+            transclusion_lookup,
             site,
             templates,
         },
@@ -474,6 +547,34 @@ fn render_note_body(
     };
 
     render_children(*body, &context)
+}
+
+fn render_links_in_body(
+    body_html: &str,
+    note_path: Option<&Path>,
+    note_ids: &HashSet<String>,
+    site: &SiteSettings,
+    templates: &Tera,
+) -> StrResult<(String, Vec<String>, Vec<String>)> {
+    let fragment = Html::parse_fragment(body_html);
+    let citations = RefCell::new(HashSet::new());
+    let related = RefCell::new(HashSet::new());
+    let context = RenderContext {
+        mode: RenderMode::Links {
+            note_ids,
+            site,
+            templates,
+            citations: Some(&citations),
+            related: Some(&related),
+        },
+        note_path,
+    };
+    let rendered = render_children(fragment.tree.root(), &context)?;
+    let mut citations: Vec<String> = citations.into_inner().into_iter().collect();
+    citations.sort();
+    let mut related: Vec<String> = related.into_inner().into_iter().collect();
+    related.sort();
+    Ok((rendered, citations, related))
 }
 
 fn render_note_head(note: &Note) -> StrResult<String> {
@@ -598,30 +699,62 @@ where
         .collect()
 }
 
+fn compute_transcluded_descendants(
+    notes: &HashMap<String, Note>,
+    order: &[String],
+) -> HashMap<String, HashSet<String>> {
+    let mut descendants: HashMap<String, HashSet<String>> = HashMap::new();
+    for id in order {
+        let note = match notes.get(id) {
+            Some(note) => note,
+            None => continue,
+        };
+        let mut set = HashSet::new();
+        for target in &note.transcludes {
+            set.insert(target.clone());
+            if let Some(child_set) = descendants.get(target) {
+                set.extend(child_set.iter().cloned());
+            }
+        }
+        descendants.insert(id.clone(), set);
+    }
+    descendants
+}
+
 fn build_backmatter_html(
     note_id: &str,
-    note_ids: &HashSet<String>,
     backlinks: &HashMap<String, Vec<String>>,
     contexts: &HashMap<String, Vec<String>>,
-    processed_notes: &HashMap<String, ProcessedNote>,
+    references: &[String],
+    related: &[String],
+    transclusion_lookup: &dyn TransclusionLookup,
     templates: &Tera,
     site: &SiteSettings,
 ) -> StrResult<String> {
     let mut sections = String::new();
-    if let Some(ids) = backlinks.get(note_id) {
+    if let Some(ids) = contexts.get(note_id) {
+        let section =
+            render_backmatter_section("Contexts", ids, transclusion_lookup, templates, site)?;
+        sections.push_str(&section);
+    }
+    if !references.is_empty() {
         let section = render_backmatter_section(
-            "Backlinks",
-            note_ids,
-            ids,
-            processed_notes,
+            "References",
+            references,
+            transclusion_lookup,
             templates,
             site,
         )?;
         sections.push_str(&section);
     }
-    if let Some(ids) = contexts.get(note_id) {
+    if let Some(ids) = backlinks.get(note_id) {
         let section =
-            render_backmatter_section("Contexts", note_ids, ids, processed_notes, templates, site)?;
+            render_backmatter_section("Backlinks", ids, transclusion_lookup, templates, site)?;
+        sections.push_str(&section);
+    }
+    if !related.is_empty() {
+        let section =
+            render_backmatter_section("Related", related, transclusion_lookup, templates, site)?;
         sections.push_str(&section);
     }
     Ok(sections)
@@ -629,9 +762,8 @@ fn build_backmatter_html(
 
 fn render_backmatter_section(
     title: &str,
-    note_ids: &HashSet<String>,
     included_note_ids: &[String],
-    processed_notes: &HashMap<String, ProcessedNote>,
+    transclusion_lookup: &dyn TransclusionLookup,
     templates: &Tera,
     site: &SiteSettings,
 ) -> StrResult<String> {
@@ -663,7 +795,7 @@ fn render_backmatter_section(
         links_out: included_ids, // unused
     };
 
-    let body_html = render_note_body(&virtual_note, processed_notes, note_ids, site, templates)?;
+    let body_html = render_note_body(&virtual_note, transclusion_lookup, site, templates)?;
 
     let section_context = BackmatterSectionTemplateContext {
         title,
@@ -733,11 +865,17 @@ struct RenderContext<'a> {
 }
 
 enum RenderMode<'a> {
-    Note {
-        processed_notes: &'a HashMap<String, ProcessedNote>,
+    Transclusion {
+        transclusion_lookup: &'a dyn TransclusionLookup,
+        site: &'a SiteSettings,
+        templates: &'a Tera,
+    },
+    Links {
         note_ids: &'a HashSet<String>,
         site: &'a SiteSettings,
         templates: &'a Tera,
+        citations: Option<&'a RefCell<HashSet<String>>>,
+        related: Option<&'a RefCell<HashSet<String>>>,
     },
     Fragment,
 }
@@ -781,30 +919,11 @@ fn render_element(
     let tag = element.name();
 
     match &context.mode {
-        RenderMode::Note {
-            processed_notes,
-            note_ids,
+        RenderMode::Transclusion {
+            transclusion_lookup,
             site,
             templates,
         } => {
-            if tag.eq_ignore_ascii_case("notty-internal-link") {
-                let target_raw = element.attr("target").ok_or_else(|| {
-                    eco_format!(
-                        "notty-internal-link missing target in {}",
-                        path_display(context)
-                    )
-                })?;
-                let target = normalize_target(target_raw);
-                if !note_ids.contains(&target) {
-                    return Err(eco_format!(
-                        "internal link target {target} referenced by {} does not exist",
-                        path_display(context)
-                    ));
-                }
-                let content = render_children(node, context)?;
-                return render_internal_link(templates, site, &target, &content);
-            }
-
             if tag.eq_ignore_ascii_case("notty-transclusion") {
                 let target_raw = element.attr("target").ok_or_else(|| {
                     eco_format!(
@@ -813,7 +932,7 @@ fn render_element(
                     )
                 })?;
                 let target = normalize_target(target_raw);
-                let body_html = processed_notes.get(&target).ok_or_else(|| {
+                let body_html = transclusion_lookup.body_html(&target).ok_or_else(|| {
                     eco_format!(
                         "transclusion target {target} referenced by {} is not processed yet",
                         path_display(context)
@@ -823,7 +942,7 @@ fn render_element(
                 let expanded = parse_bool_attr(element.attr("expanded"), true);
                 let disable_numbering = parse_bool_attr(element.attr("disable-numbering"), false);
                 let demote_headings = parse_bool_attr(element.attr("demote-headings"), true);
-                let content_html = prepare_transclusion_content(body_html.body_html.as_str())?;
+                let content_html = prepare_transclusion_content(body_html)?;
                 let transclusion = TransclusionTemplateContext {
                     target: target.as_str(),
                     show_metadata,
@@ -835,10 +954,50 @@ fn render_element(
                 return render_transclusion(templates, site, &transclusion);
             }
         }
-        RenderMode::Fragment => {
+        RenderMode::Links {
+            note_ids,
+            site,
+            templates,
+            citations,
+            related,
+        } => {
+            if tag.eq_ignore_ascii_case("notty-transclusion") {
+                return Err(eco_format!(
+                    "unexpected notty-transclusion in link rendering"
+                ));
+            }
             if tag.eq_ignore_ascii_case("notty-internal-link")
-                || tag.eq_ignore_ascii_case("notty-transclusion")
+                || tag.eq_ignore_ascii_case("notty-cite")
             {
+                let target_raw = element.attr("target").ok_or_else(|| {
+                    eco_format!("{} missing target in {}", tag, path_display(context))
+                })?;
+                let target = normalize_target(target_raw);
+                if !note_ids.contains(&target) {
+                    return Err(eco_format!(
+                        "link target {target} referenced by {} does not exist",
+                        path_display(context)
+                    ));
+                }
+                if tag.eq_ignore_ascii_case("notty-cite")
+                    && let Some(citations) = citations
+                {
+                    citations.borrow_mut().insert(target.clone());
+                }
+                if tag.eq_ignore_ascii_case("notty-internal-link")
+                    && let Some(related) = related
+                {
+                    related.borrow_mut().insert(target.clone());
+                }
+                let content = render_children(node, context)?;
+                if tag.eq_ignore_ascii_case("notty-cite") {
+                    return render_citation(templates, site, &target, &content);
+                }
+                return render_internal_link(templates, site, &target, &content);
+            }
+        }
+        RenderMode::Fragment => {
+            if tag.eq_ignore_ascii_case("notty-transclusion") {
                 return Err(eco_format!(
                     "unexpected notty element in processed fragment"
                 ));
