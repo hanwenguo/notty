@@ -32,6 +32,7 @@ struct Heading {
     level: u8,
     id: String,
     content: String,
+    disable_numbering: bool,
     children: Vec<Heading>,
 }
 
@@ -516,10 +517,15 @@ fn build_toc(body_html: &str) -> StrResult<Vec<Heading>> {
         })?;
         let id = element.attr("id").unwrap_or("").to_string();
         let content = render_children(*heading, &context)?;
+        let disable_numbering = element
+            .attr("class")
+            .map(|class| class.split_whitespace().any(|c| c == "disable-numbering"))
+            .unwrap_or(false);
         let heading = Heading {
             level,
             id,
             content,
+            disable_numbering,
             children: Vec::new(),
         };
 

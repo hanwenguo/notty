@@ -40,22 +40,22 @@
             {% for h2 in h1.children %}
             <li>
               <a href="{{site.root_dir}}{{ h2.id }}/" class="bullet">■</a>
-              <a href="#{{ h2.id }}" class="link local">{{ h2.content | safe }}</a>
+              <a href="#{{ h2.id }}" class="link local {%- if h2.disable_numbering %} disable-numbering{%- endif -%}">{{ h2.content | safe }}</a>
               <ul class="block">
                 {% for h3 in h2.children %}
                 <li>
                   <a href="{{site.root_dir}}{{ h3.id }}/" class="bullet">■</a>
-                  <a href="#{{ h3.id }}" class="link local">{{ h3.content | safe }}</a>
+                  <a href="#{{ h3.id }}" class="link local {%- if h3.disable_numbering %} disable-numbering{%- endif -%}">{{ h3.content | safe }}</a>
                   <ul class="block">
                     {% for h4 in h3.children %}
                     <li>
                       <a href="{{site.root_dir}}{{ h4.id }}/" class="bullet">■</a>
-                      <a href="#{{ h4.id }}" class="link local">{{ h4.content | safe }}</a>
+                      <a href="#{{ h4.id }}" class="link local {%- if h4.disable_numbering %} disable-numbering{%- endif -%}">{{ h4.content | safe }}</a>
                       <ul class="block">
                         {% for h5 in h4.children %}
                         <li>
                           <a href="{{site.root_dir}}{{ h5.id }}/" class="bullet">■</a>
-                          <a href="#{{ h5.id }}" class="link local">{{ h5.content | safe }}</a>
+                          <a href="#{{ h5.id }}" class="link local {%- if h5.disable_numbering %} disable-numbering{%- endif -%}">{{ h5.content | safe }}</a>
                         </li>
                         {% endfor %}
                       </ul>
