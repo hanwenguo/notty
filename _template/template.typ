@@ -1,4 +1,4 @@
-#import "/_template/site.typ": config
+#import "/_template/site.typ"
 #import "/_template/template-paged.typ": template-paged, ln-paged, ct-paged, tr-paged
 
 #let target = sys.inputs.at("notty-target", default: none)
@@ -55,7 +55,7 @@
           let href = if inline {
             "#" + identifier
           } else {
-            config.root-path + identifier + ".html"
+            site.config.root-path + identifier + (if site.notty-config.site.trailing_slash { "/" } else { ".html" })
           }
           html.a(class: "slug", href: href, "[" + identifier + "]")
         }
