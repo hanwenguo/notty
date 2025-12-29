@@ -3,7 +3,7 @@
   title:      [Notty],
   date:       datetime(year: 2025, month: 06, day: 19, hour: 22, minute: 30, second: 48),
   tags:       (),
-  identifier: "20250619T223048",
+  identifier: "index",
   taxon:  "Software",
 )
 
