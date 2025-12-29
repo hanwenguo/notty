@@ -1,7 +1,11 @@
 [package]
-name = "notty"
-version = "0.1.0"
+name = "weibian"
+version = "1.0.0-rc1"
 edition = "2024"
+
+[[bin]]
+name = "wb"
+path = "src/main.rs"
 
 [dependencies]
 chrono = { version = "0.4.41", default-features = false, features = ["clock", "std"] }

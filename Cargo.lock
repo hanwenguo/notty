@@ -695,26 +695,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "notty"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "clap",
- "codespan-reporting",
- "color-print",
- "ecow",
- "ego-tree",
- "figment",
- "html5ever",
- "pathdiff",
- "scraper",
- "serde",
- "serde_json",
- "tera",
- "termcolor",
-]
-
-[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1456,6 +1436,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "weibian"
+version = "1.0.0-rc1"
+dependencies = [
+ "chrono",
+ "clap",
+ "codespan-reporting",
+ "color-print",
+ "ecow",
+ "ego-tree",
+ "figment",
+ "html5ever",
+ "pathdiff",
+ "scraper",
+ "serde",
+ "serde_json",
+ "tera",
+ "termcolor",
 ]
 
 [[package]]

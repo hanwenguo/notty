@@ -8,10 +8,10 @@ use serde::Deserialize;
 use crate::args::{CompileArgs, ProcessArgs, WorldArgs};
 use crate::error::StrResult;
 
-const DEFAULT_CONFIG_PATH: &str = ".notty/config.toml";
+const DEFAULT_CONFIG_PATH: &str = ".wb/config.toml";
 
 #[derive(Debug, Default, Deserialize)]
-pub struct NottyConfig {
+pub struct WeibianConfig {
     #[serde(default)]
     pub directories: DirectoriesConfig,
 
@@ -54,7 +54,7 @@ pub struct BuildConfig {
     pub process: ProcessArgs,
 }
 
-pub fn load_config(config_path: Option<&Path>) -> StrResult<NottyConfig> {
+pub fn load_config(config_path: Option<&Path>) -> StrResult<WeibianConfig> {
     let (path, is_default) = match config_path {
         Some(path) => (path.to_path_buf(), false),
         None => (PathBuf::from(DEFAULT_CONFIG_PATH), true),
@@ -62,19 +62,19 @@ pub fn load_config(config_path: Option<&Path>) -> StrResult<NottyConfig> {
 
     if !path.exists() {
         if is_default {
-            return Ok(NottyConfig::default());
+            return Ok(WeibianConfig::default());
         }
         return Err(eco_format!("config file {} does not exist", path.display()));
     }
 
     Figment::new()
         .merge(Toml::file(&path))
-        .extract::<NottyConfig>()
+        .extract::<WeibianConfig>()
         .map_err(|err| eco_format!("failed to load config {}: {err}", path.display()))
 }
 
 impl BuildConfig {
-    pub fn from(args: &CompileArgs, config: &NottyConfig) -> StrResult<Self> {
+    pub fn from(args: &CompileArgs, config: &WeibianConfig) -> StrResult<Self> {
         let input_directory = resolve_dir(
             args.input.as_ref(),
             config.directories.input_dir.as_ref(),
@@ -83,7 +83,7 @@ impl BuildConfig {
         let html_cache_directory = resolve_dir(
             args.html_cache.as_ref(),
             config.directories.cache_dir.as_ref(),
-            ".notty/cache",
+            ".wb/cache",
         );
         let public_directory = resolve_dir(
             args.public.as_ref(),

@@ -70,7 +70,7 @@ fn set_failed() {
 }
 
 /// Used by `args.rs`.
-fn notty_version() -> &'static str {
+fn weibian_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 

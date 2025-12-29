@@ -1,7 +1,7 @@
 #import "/_template/site.typ"
 #import "/_template/template-paged.typ": template-paged, ln-paged, ct-paged, tr-paged
 
-#let target = sys.inputs.at("notty-target", default: none)
+#let target = sys.inputs.at("wb-target", default: none)
 
 #let _sequence = [].func()
 #let _styled = [#set text(size: 1pt)].func()
@@ -55,7 +55,7 @@
           let href = if inline {
             "#" + identifier
           } else {
-            site.config.root-path + identifier + (if site.notty-config.site.trailing_slash { "/" } else { ".html" })
+            site.config.root-path + identifier + (if site.wb-config.site.trailing_slash { "/" } else { ".html" })
           }
           html.a(class: "slug", href: href, "[" + identifier + "]")
         }
@@ -123,11 +123,17 @@
   body,
   identifier: none,
   title: none,
+  expanded: true,
   ..attrs,
-) = html.section(
+) = {
+  let details-attrs = if expanded {
+    (open: true)
+  } else {
+    (:)
+  }
+  html.section(
     class: "block",
     html.details(
-      open: true,
       {
         _summary_header(
           level: 2,
@@ -137,9 +143,11 @@
           ..attrs
         )
         body
-      }
+      },
+      ..details-attrs,
     )
   )
+}
 
 #let template-html(
   identifier: "",
@@ -187,7 +195,7 @@
   html.span(
     class: "link local",
     html.elem(
-      "notty-internal-link",
+      "wb-internal-link",
       attrs: (target: dest),
       body
     )
@@ -204,7 +212,7 @@
   html.span(
     class: "link local",
     html.elem(
-      "notty-cite",
+      "wb-cite",
       attrs: (target: dest),
       body
     )
@@ -219,7 +227,7 @@
 
 #let tr-html(id, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
   html.elem(
-    "notty-transclusion",
+    "wb-transclusion",
     attrs: (
       target: id,
       show-metadata: if show-metadata { "true" } else { "false" },

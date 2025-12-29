@@ -1,6 +1,6 @@
 #let config = (
   base-url: "https://hanwenguo.github.io",
-  root-path: "/notty/", // use "/" if you want to serve from the root
+  root-path: "/weibian/", // use "/" if you want to serve from the root
   lang: "en",
   default-author: (
     name: "John Doe",
@@ -9,7 +9,7 @@
   math-fonts: ("IBM Plex Math",),
 )
 
-#let notty-config = toml("../.notty/config.toml")
+#let wb-config = toml("../.wb/config.toml")
 
 #let html-metadata-taxon-map = (
   :

@@ -49,30 +49,30 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build
-        run: cargo build --verbose --bin=notty --release --locked --target=${{ matrix.target }}
+        run: cargo build --verbose --bin=wb --release --locked --target=${{ matrix.target }}
 
       - name: Package (unix)
         if: matrix.archive == 'tar.gz'
         run: |
           mkdir -p dist/package
-          cp target/${{ matrix.target }}/release/notty dist/package/
+          cp target/${{ matrix.target }}/release/wb dist/package/
           cp LICENSE README.md dist/package/
-          tar -czf dist/notty-${{ matrix.target }}.tar.gz -C dist/package .
+          tar -czf dist/wb-${{ matrix.target }}.tar.gz -C dist/package .
 
       - name: Package (windows)
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist\\package | Out-Null
-          Copy-Item target\\${{ matrix.target }}\\release\\notty.exe dist\\package\\
+          Copy-Item target\\${{ matrix.target }}\\release\\wb.exe dist\\package\\
           Copy-Item LICENSE dist\\package\\
           Copy-Item README.md dist\\package\\
-          Compress-Archive -Path dist\\package\\* -DestinationPath dist\\notty-${{ matrix.target }}.zip
+          Compress-Archive -Path dist\\package\\* -DestinationPath dist\\wb-${{ matrix.target }}.zip
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/notty-${{ matrix.target }}.${{ matrix.archive }}
+          files: dist/wb-${{ matrix.target }}.${{ matrix.archive }}
           prerelease: ${{ contains(github.ref, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

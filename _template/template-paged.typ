@@ -44,7 +44,7 @@
   content
 }
 
-#let notty-section = _main-part
+#let wb-section = _main-part
 
 #let template-paged(
   title: "",
@@ -123,7 +123,7 @@
         identifier: identifier,
         title: title,
         date: if attrs.at("date", default: none) != none {
-          attrs.date.display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]")
+          attrs.at("date").display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]")
         } else {
           none
         },

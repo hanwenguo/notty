@@ -1,9 +1,9 @@
 {%- set html = transclusion.content -%}
 {%- if transclusion.disable_numbering -%}
-  {%- set html = html | notty_disable_numbering -%}
+  {%- set html = html | wb_disable_numbering -%}
 {%- endif -%}
 {%- if transclusion.demote_headings -%}
-  {%- set html = html | notty_demote_headings -%}
+  {%- set html = html | wb_demote_headings -%}
 {%- endif -%}
 <section class="block {%- if not transclusion.show_metadata %} hide-metadata{%- endif -%}">
   <details {%- if transclusion.expanded %} open{%- endif -%}>

@@ -1,7 +1,7 @@
 use crate::error::StrResult;
 
 use crate::args::CompileCommand;
-use crate::config::{BuildConfig, NottyConfig};
+use crate::config::{BuildConfig, WeibianConfig};
 use crate::{backend, frontend};
 // use crate::args::Output;
 // use crate::args::Input;
@@ -9,7 +9,7 @@ use crate::{backend, frontend};
 // type CodespanResult<T> = Result<T, CodespanError>;
 // type CodespanError = codespan_reporting::files::Error;
 
-pub fn compile(command: &CompileCommand, config: &NottyConfig) -> StrResult<()> {
+pub fn compile(command: &CompileCommand, config: &WeibianConfig) -> StrResult<()> {
     let build_config = BuildConfig::from(&command.args, config)?;
 
     let html_dir = frontend::compile_html(&build_config)?;

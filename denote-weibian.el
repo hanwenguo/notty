@@ -1,10 +1,10 @@
-;;; denote-notty.el --- Extension of denote that integrates with Notty (NOte Taking in TYpst) -*- lexical-binding: t -*-
+;;; denote-weibian.el --- Extension of denote that integrates with Weibian (NOte Taking in TYpst) -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025 Free Software Foundation, Inc.
 
 ;; Author: Hanwen Guo <guo@hanwen.io>
 ;; Maintainer: Hanwen Guo <guo@hanwen.io>
-;; URL: https://github.com/hanwenguo/notty
+;; URL: https://github.com/hanwenguo/weibian
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "28.1") (denote "4.0.0"))
 
@@ -25,12 +25,12 @@
 
 ;;; Commentary:
 ;;
-;; Optional extensions for Denote that work specifically with Notty, a note taking system for Typst.
+;; Optional extensions for Denote that work specifically with Weibian, a note taking system for Typst.
 
 ;;; Code:
 (require 'denote)
 
-(defvar denote-notty-front-matter
+(defvar denote-weibian-front-matter
   "#import \"/_template/template.typ\": template, tr, ln
 #show: template(
   title:      %s,
@@ -39,59 +39,59 @@
   identifier: %s,
   taxon:  %s,
 )")
-(defvar denote-notty-title-key-regexp "^\\s-*title\\s-*:")
-(defvar denote-notty-keywords-key-regexp "^\\s-*tags\\s-*:")
-(defvar denote-notty-signature-key-regexp "^\\s-*taxon\\s-*:")
-(defvar denote-notty-identifier-key-regexp "^\\s-*identifier\\s-*:")
-(defvar denote-notty-date-key-regexp "^\\s-*date\\s-*:")
+(defvar denote-weibian-title-key-regexp "^\\s-*title\\s-*:")
+(defvar denote-weibian-keywords-key-regexp "^\\s-*tags\\s-*:")
+(defvar denote-weibian-signature-key-regexp "^\\s-*taxon\\s-*:")
+(defvar denote-weibian-identifier-key-regexp "^\\s-*identifier\\s-*:")
+(defvar denote-weibian-date-key-regexp "^\\s-*date\\s-*:")
 
-(defun denote-notty--trim-trailing-comma (s)
+(defun denote-weibian--trim-trailing-comma (s)
   "Trim trailing comma from string S."
   (if (string-suffix-p "," s)
    (substring s 0 -1)
   s))
 
-(defun denote-notty--trim-brackets (s)
+(defun denote-weibian--trim-brackets (s)
   "Trim brackets around string S."
   (let ((trims "[][]+"))
     (string-trim s trims trims)))
 
-(defun denote-notty-trim-whitespace-then-comma-then-quotes (s)
+(defun denote-weibian-trim-whitespace-then-comma-then-quotes (s)
   "Trim whitespace then trailing comma then quotes from string S."
-  (denote--trim-quotes (denote-trim-whitespace (denote-notty--trim-trailing-comma (denote-trim-whitespace s)))))
+  (denote--trim-quotes (denote-trim-whitespace (denote-weibian--trim-trailing-comma (denote-trim-whitespace s)))))
 
-(defun denote-notty-trim-whitespace-then-comma-then-brackets (s)
+(defun denote-weibian-trim-whitespace-then-comma-then-brackets (s)
   "Trim whitespace then trailing comma then quotes from string S."
-  (denote-notty--trim-brackets (denote-trim-whitespace (denote-notty--trim-trailing-comma (denote-trim-whitespace s)))))
+  (denote-weibian--trim-brackets (denote-trim-whitespace (denote-weibian--trim-trailing-comma (denote-trim-whitespace s)))))
 
-(defun denote-notty-format-string-for-front-matter (s)
+(defun denote-weibian-format-string-for-front-matter (s)
   "Surround string S with quotes.
 
 This can be used in `denote-file-types' to format front mattter."
   (let ((completion-ignore-case nil))
     (format "\"%s\"" s)))
 
-(defun denote-notty-format-string-into-content-for-front-matter (s)
+(defun denote-weibian-format-string-into-content-for-front-matter (s)
   "Surround string S with quotes.
 
 This can be used in `denote-file-types' to format front mattter."
   (let ((completion-ignore-case nil))
     (format "[%s]" s)))
 
-(defun denote-notty-format-keywords-for-front-matter (keywords)
+(defun denote-weibian-format-keywords-for-front-matter (keywords)
   "Format front matter KEYWORDS for Typst file type.
 KEYWORDS is a list of strings.  Consult the `denote-file-types'
 for how this is used."
   (format "(%s)" (mapconcat (lambda (k) (format "%S," k)) keywords " ")))
 
-(defun denote-notty-extract-keywords-from-front-matter (keywords-string)
+(defun denote-weibian-extract-keywords-from-front-matter (keywords-string)
   "Extract keywords list from front matter KEYWORDS-STRING.
 Split KEYWORDS-STRING into a list of strings.
 
 Consult the `denote-file-types' for how this is used."
   (split-string keywords-string "[:,\s]+" t "[][)( \"']+"))
 
-(defun denote-notty-format-date (date)
+(defun denote-weibian-format-date (date)
   "Format DATE as Typst datetime."
   (if date
      (format-time-string
@@ -99,30 +99,30 @@ Consult the `denote-file-types' for how this is used."
       date)
     ""))
 
-(defmacro denote-notty--define-retrieve-date (field)
+(defmacro denote-weibian--define-retrieve-date (field)
   "Define a function to retrieve FIELD of a Typst datetime expression."
   (declare (indent 1))
-  `(defun ,(intern (format "denote-notty--retrieve-date-%s" field)) (date-string)
+  `(defun ,(intern (format "denote-weibian--retrieve-date-%s" field)) (date-string)
      (string-match ,(format "%s\\s-*:\\s-*\\([[:digit:]]+\\)\\s-*\\(,\\|)\\)" field)
                    date-string)
      (let ((matched (match-string 1 date-string)))
        matched)))
 
-(denote-notty--define-retrieve-date year)
-(denote-notty--define-retrieve-date month)
-(denote-notty--define-retrieve-date day)
-(denote-notty--define-retrieve-date hour)
-(denote-notty--define-retrieve-date minute)
-(denote-notty--define-retrieve-date second)
+(denote-weibian--define-retrieve-date year)
+(denote-weibian--define-retrieve-date month)
+(denote-weibian--define-retrieve-date day)
+(denote-weibian--define-retrieve-date hour)
+(denote-weibian--define-retrieve-date minute)
+(denote-weibian--define-retrieve-date second)
 
-(defun denote-notty--extract-date-from-front-matter (date-string)
+(defun denote-weibian--extract-date-from-front-matter (date-string)
   "Extract date object from front matter DATE-STRING."
-  (let ((year (denote-notty--retrieve-date-year date-string))
-        (month (denote-notty--retrieve-date-month date-string))
-        (day (denote-notty--retrieve-date-day date-string))
-        (hour (denote-notty--retrieve-date-hour date-string))
-        (minute (denote-notty--retrieve-date-minute date-string))
-        (second (denote-notty--retrieve-date-second date-string)))
+  (let ((year (denote-weibian--retrieve-date-year date-string))
+        (month (denote-weibian--retrieve-date-month date-string))
+        (day (denote-weibian--retrieve-date-day date-string))
+        (hour (denote-weibian--retrieve-date-hour date-string))
+        (minute (denote-weibian--retrieve-date-minute date-string))
+        (second (denote-weibian--retrieve-date-second date-string)))
     (if (and year month day hour minute second)
         (encode-time
          (string-to-number second)
@@ -132,54 +132,54 @@ Consult the `denote-file-types' for how this is used."
          (string-to-number month)
          (string-to-number year)))))
 
-(defun denote-notty-extract-date-from-front-matter (date-string)
+(defun denote-weibian-extract-date-from-front-matter (date-string)
   "Extract date object from front matter DATE-STRING.
 
 Consult the `denote-file-types' for how this is used."
-  (let ((date-string (denote-notty-trim-whitespace-then-comma-then-quotes date-string)))
+  (let ((date-string (denote-weibian-trim-whitespace-then-comma-then-quotes date-string)))
     (if (string-empty-p date-string)
       nil
-     (denote-notty--extract-date-from-front-matter date-string))))
+     (denote-weibian--extract-date-from-front-matter date-string))))
 
-(defvar denote-notty-link-format "#ln(\"notty:%s\")[%s]")
-(defvar denote-notty-link-in-context-regexp
-  "#ln([[:blank:]]*\"notty:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)\\[\\(?2:.*?\\)\\]")
-(defvar denote-notty-transclusion-format "#tr(\"notty:%s\"")
-(defvar denote-notty-transclusion-in-context-regexp
-  "#tr([[:blank:]]*\"notty:\\(?1:[^\"()]+?\\)\"")
+(defvar denote-weibian-link-format "#ln(\"wb:%s\")[%s]")
+(defvar denote-weibian-link-in-context-regexp
+  "#ln([[:blank:]]*\"wb:\\(?1:[^\"()]+?\\)\"[[:blank:]]*)\\[\\(?2:.*?\\)\\]")
+(defvar denote-weibian-transclusion-format "#tr(\"wb:%s\"")
+(defvar denote-weibian-transclusion-in-context-regexp
+  "#tr([[:blank:]]*\"wb:\\(?1:[^\"()]+?\\)\"")
 
-(defvar denote-notty-file-type
-  `(notty
+(defvar denote-weibian-file-type
+  `(weibian
     :extension ".typ"
-    :front-matter denote-notty-front-matter
-    :link-retrieval-format "\"notty:%VALUE%\""
-    :link denote-notty-link-format
-    :link-in-context-regexp denote-notty-link-in-context-regexp
-    :title-key-regexp ,denote-notty-title-key-regexp
-    :title-value-function denote-notty-format-string-into-content-for-front-matter
-    :title-value-reverse-function denote-notty-trim-whitespace-then-comma-then-brackets
-    :keywords-key-regexp ,denote-notty-keywords-key-regexp
-    :keywords-value-function denote-notty-format-keywords-for-front-matter
-    :keywords-value-reverse-function denote-notty-extract-keywords-from-front-matter
-    :signature-key-regexp ,denote-notty-signature-key-regexp
-    :signature-value-function denote-notty-format-string-for-front-matter
-    :signature-value-reverse-function denote-notty-trim-whitespace-then-comma-then-quotes
-    :identifier-key-regexp ,denote-notty-identifier-key-regexp
-    :identifier-value-function denote-notty-format-string-for-front-matter
-    :identifier-value-reverse-function denote-notty-trim-whitespace-then-comma-then-quotes
-    :date-key-regexp ,denote-notty-date-key-regexp
-    :date-value-function denote-notty-format-date
-    :date-value-reverse-function denote-notty-extract-date-from-front-matter))
+    :front-matter denote-weibian-front-matter
+    :link-retrieval-format "\"wb:%VALUE%\""
+    :link denote-weibian-link-format
+    :link-in-context-regexp denote-weibian-link-in-context-regexp
+    :title-key-regexp ,denote-weibian-title-key-regexp
+    :title-value-function denote-weibian-format-string-into-content-for-front-matter
+    :title-value-reverse-function denote-weibian-trim-whitespace-then-comma-then-brackets
+    :keywords-key-regexp ,denote-weibian-keywords-key-regexp
+    :keywords-value-function denote-weibian-format-keywords-for-front-matter
+    :keywords-value-reverse-function denote-weibian-extract-keywords-from-front-matter
+    :signature-key-regexp ,denote-weibian-signature-key-regexp
+    :signature-value-function denote-weibian-format-string-for-front-matter
+    :signature-value-reverse-function denote-weibian-trim-whitespace-then-comma-then-quotes
+    :identifier-key-regexp ,denote-weibian-identifier-key-regexp
+    :identifier-value-function denote-weibian-format-string-for-front-matter
+    :identifier-value-reverse-function denote-weibian-trim-whitespace-then-comma-then-quotes
+    :date-key-regexp ,denote-weibian-date-key-regexp
+    :date-value-function denote-weibian-format-date
+    :date-value-reverse-function denote-weibian-extract-date-from-front-matter))
 
-(defun denote-notty-format-transclude (file)
+(defun denote-weibian-format-transclude (file)
   "Prepare transclusion to FILE."
   (let* ((identifier (denote-retrieve-filename-identifier file)))
     (format
-     denote-notty-transclusion-format
+     denote-weibian-transclusion-format
      identifier)))
 
 ;;;###autoload
-(defun denote-notty-transclude (file &optional id-only)
+(defun denote-weibian-transclude (file &optional id-only)
   "Create transclusion to FILE in variable `denote-directory' with DESCRIPTION.
 
 When called interactively, prompt for FILE using completion.
@@ -209,36 +209,36 @@ the active region specially, is up to it."
   (unless (file-exists-p file)
     (user-error "The linked file does not exist"))
   (denote--delete-active-region-content)
-  (insert (format denote-notty-transclusion-format
+  (insert (format denote-weibian-transclusion-format
                   (denote-retrieve-filename-identifier file))))
 
-(defun denote-notty-backlinks-query-regexp (id)
+(defun denote-weibian-backlinks-query-regexp (id)
   "Return a regexp to query contexts of file with ID."
   (rx
    "#ln("
    (zero-or-more blank)
-   "\"notty:"
+   "\"wb:"
    (literal id)
    "\""
    (zero-or-more blank)
    ")"))
 
-(defun denote-notty-contexts-query-regexp (id)
+(defun denote-weibian-contexts-query-regexp (id)
   "Return a regexp to query contexts of file with ID."
   (rx
    line-start
    (zero-or-more blank)
    "#tr("
    (zero-or-more blank)
-   "\"notty:"
+   "\"wb:"
    (literal id)
    "\""))
 
-(defun denote-notty--get-all-mention (files regexp)
+(defun denote-weibian--get-all-mention (files regexp)
   "Return hash table of all mention in FILES by identifier using REGEXP."
   (let* ((links-hash-table (make-hash-table :test 'equal))
          (files-by-file-type (denote--get-files-by-file-type files))
-         (files (gethash 'notty files-by-file-type)))
+         (files (gethash 'weibian files-by-file-type)))
     (dolist (file files)
       (let* ((file-identifiers
               (with-temp-buffer
@@ -250,16 +250,16 @@ the active region specially, is up to it."
             (puthash file-identifier (list file) links-hash-table)))))
     links-hash-table))
 
-(defun denote-notty-retrieve-xref-alist-for-mention (identifier regexp)
+(defun denote-weibian-retrieve-xref-alist-for-mention (identifier regexp)
   "Return xref alist of absolute file paths of matches of REGEXP for IDENTIFIER."
   (let* ((files (denote-directory-files))
          (xref-file-name-display 'abs)
          (xref-matches '()))
     (when-let* ((current-all-mention
                  (gethash identifier
-                          (denote-notty--get-all-mention files regexp)))
+                          (denote-weibian--get-all-mention files regexp)))
                 (format-parts (split-string
-                               (denote--link-retrieval-format 'notty)
+                               (denote--link-retrieval-format 'weibian)
                                "%VALUE%")) ; Should give two parts
                 (query-simple (concat
                                (regexp-quote (nth 0 format-parts))
@@ -275,8 +275,8 @@ the active region specially, is up to it."
             (mapcar (lambda (x) (assoc x data)) files-sorted)
           data)))))
 
-(defun denote-notty--contexts-get-buffer-name (file id)
-  "Format a buffer name for `denote-notty-contexts'.
+(defun denote-weibian--contexts-get-buffer-name (file id)
+  "Format a buffer name for `denote-weibian-contexts'.
 Use FILE to detect a suitable title with which to name the buffer.  Else
 use the ID."
   (denote-format-buffer-name
@@ -287,50 +287,50 @@ use the ID."
    :special-buffer))
 
 ;;;###autoload
-(defun denote-notty-contexts ()
+(defun denote-weibian-contexts ()
   "Produce a buffer with contexts to the current note.
 
 By contexts, one mean files transcluding the current note. Show the
 names of files linking to the current file. Include the content of each
-context if the user option `denote-notty-contexts-show-content' is non-nil.
+context if the user option `denote-weibian-contexts-show-content' is non-nil.
 
 Place the buffer below the current window or wherever the user option
-`denote-notty-contexts-display-buffer-action' specifies."
+`denote-weibian-contexts-display-buffer-action' specifies."
   (interactive)
   (if-let* ((file buffer-file-name))
       (if-let* ((identifier (denote-retrieve-filename-identifier file)))
-          (when-let* ((query (denote-notty-contexts-query-regexp identifier)))
+          (when-let* ((query (denote-weibian-contexts-query-regexp identifier)))
             (funcall denote-query-links-buffer-function
                      query nil
-                     (denote-notty--contexts-get-buffer-name file identifier)
+                     (denote-weibian--contexts-get-buffer-name file identifier)
                      denote-backlinks-display-buffer-action))
         (user-error "The current file does not have a Denote identifier"))
     (user-error "Buffer `%s' is not associated with a file" (current-buffer))))
 
-(defalias 'denote-notty-show-contexts-buffer 'denote-notty-contexts
-  "Alias for `denote-notty-contexts' command.")
+(defalias 'denote-weibian-show-contexts-buffer 'denote-weibian-contexts
+  "Alias for `denote-weibian-contexts' command.")
 
-(defun denote-notty-get-contexts (&optional file)
+(defun denote-weibian-get-contexts (&optional file)
   "Return list of contexts in current or optional FILE.
 Also see `denote-link-return-backlinks'."
   (when-let* ((current-file (or file (buffer-file-name)))
               (id (or (denote-retrieve-filename-identifier current-file)
                       (user-error "The file does not have a Denote identifier")))
               (_ (denote-file-is-in-denote-directory-p current-file))
-              (xrefs (denote-notty-retrieve-xref-alist-for-mention
+              (xrefs (denote-weibian-retrieve-xref-alist-for-mention
                       id
-                      denote-notty-transclusion-in-context-regexp)))
+                      denote-weibian-transclusion-in-context-regexp)))
     (mapcar #'car xrefs)))
 
-(defun denote-notty--file-has-contexts-p (file)
+(defun denote-weibian--file-has-contexts-p (file)
   "Return non-nil if FILE has contexts."
-  (not (zerop (length (denote-notty-get-contexts file)))))
+  (not (zerop (length (denote-weibian-get-contexts file)))))
 
 ;;;###autoload
-(defun denote-notty-find-context ()
+(defun denote-weibian-find-context ()
   "Use minibuffer completion to visit context to current file.
 Visit the file itself, not the location where the link is.  For a
-context-sensitive operation, use `denote-notty-find-context-with-location'.
+context-sensitive operation, use `denote-weibian-find-context-with-location'.
 
 Alo see `denote-find-link'."
   (declare (interactive-only t))
@@ -338,26 +338,26 @@ Alo see `denote-find-link'."
   (when-let* ((current-file buffer-file-name)
               (_ (or (denote-retrieve-filename-identifier current-file)
                      (user-error "The current file does not have a Denote identifier")))
-              (links (or (denote-notty-get-contexts current-file)
+              (links (or (denote-weibian-get-contexts current-file)
                          (user-error "No contexts found")))
               (selected (denote-select-from-files-prompt links "Select among CONTEXTS")))
     (find-file selected)))
 
 ;;;###autoload
-(defun denote-notty-find-context-with-location ()
+(defun denote-weibian-find-context-with-location ()
   "Like `denote-find-backlink' but jump to the exact location of the link."
   (declare (interactive-only t))
   (interactive)
   (when-let* ((current-file buffer-file-name)
               (id (or (denote-retrieve-filename-identifier current-file)
                       (user-error "The current file does not have a Denote identifier")))
-              (query (denote-notty-contexts-query-regexp id))
+              (query (denote-weibian-contexts-query-regexp id))
               (files (denote-directory-files nil :omit-current :text-only))
               (fetcher (lambda () (xref-matches-in-files query files))))
     (xref-show-definitions-completing-read fetcher nil)))
 
 ;;;###autoload
-(defun denote-notty-backlinks ()
+(defun denote-weibian-backlinks ()
   "Produce a buffer with backlinks to the current note.
 
 Show the names of files linking to the current file.  Include the
@@ -369,7 +369,7 @@ Place the buffer below the current window or wherever the user option
   (interactive)
   (if-let* ((file buffer-file-name))
       (if-let* ((identifier (denote-retrieve-filename-identifier file)))
-          (when-let* ((query (denote-notty-backlinks-query-regexp identifier)))
+          (when-let* ((query (denote-weibian-backlinks-query-regexp identifier)))
             (funcall denote-query-links-buffer-function
                      query nil
                      (denote--backlinks-get-buffer-name file identifier)
@@ -377,23 +377,23 @@ Place the buffer below the current window or wherever the user option
         (user-error "The current file does not have a Denote identifier"))
     (user-error "Buffer `%s' is not associated with a file" (current-buffer))))
 
-(defalias 'denote-notty-show-backlinks-buffer 'denote-notty-backlinks
-  "Alias for `denote-notty-backlinks' command.")
+(defalias 'denote-weibian-show-backlinks-buffer 'denote-weibian-backlinks
+  "Alias for `denote-weibian-backlinks' command.")
 
-(defun denote-notty-get-backlinks (&optional file)
+(defun denote-weibian-get-backlinks (&optional file)
   "Return list of backlinks in current or optional FILE.
 Also see `denote-get-links'."
   (when-let* ((current-file (or file (buffer-file-name)))
               (id (or (denote-retrieve-filename-identifier current-file)
                       (user-error "The file does not have a Denote identifier")))
               (_ (denote-file-is-in-denote-directory-p current-file))
-              (xrefs (denote-notty-retrieve-xref-alist-for-mention
+              (xrefs (denote-weibian-retrieve-xref-alist-for-mention
                       id
-                      denote-notty-link-in-context-regexp)))
+                      denote-weibian-link-in-context-regexp)))
     (mapcar #'car xrefs)))
 
 ;;;###autoload
-(defun denote-notty-find-backlink ()
+(defun denote-weibian-find-backlink ()
   "Use minibuffer completion to visit backlink to current file.
 Visit the file itself, not the location where the link is.  For a
 context-sensitive operation, use `denote-find-backlink-with-location'.
@@ -404,23 +404,23 @@ Alo see `denote-find-link'."
   (when-let* ((current-file buffer-file-name)
               (_ (or (denote-retrieve-filename-identifier current-file)
                      (user-error "The current file does not have a Denote identifier")))
-              (links (or (denote-notty-get-backlinks current-file)
+              (links (or (denote-weibian-get-backlinks current-file)
                          (user-error "No backlinks found")))
               (selected (denote-select-from-files-prompt links "Select among BACKLINKS")))
     (find-file selected)))
 
 ;;;###autoload
-(defun denote-notty-find-backlink-with-location ()
+(defun denote-weibian-find-backlink-with-location ()
   "Like `denote-find-backlink' but jump to the exact location of the link."
   (declare (interactive-only t))
   (interactive)
   (when-let* ((current-file buffer-file-name)
               (id (or (denote-retrieve-filename-identifier current-file)
                       (user-error "The current file does not have a Denote identifier")))
-              (query (denote-notty-backlinks-query-regexp id))
+              (query (denote-weibian-backlinks-query-regexp id))
               (files (denote-directory-files nil :omit-current :text-only))
               (fetcher (lambda () (xref-matches-in-files query files))))
     (xref-show-definitions-completing-read fetcher nil)))
 
-(provide 'denote-notty)
-;;; denote-notty.el ends here
+(provide 'denote-weibian)
+;;; denote-weibian.el ends here

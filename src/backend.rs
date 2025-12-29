@@ -243,11 +243,11 @@ fn process_note(
 }
 
 fn load_templates() -> StrResult<Tera> {
-    let pattern = ".notty/templates/**/*.html";
+    let pattern = ".wb/templates/**/*.html";
     let mut tera = Tera::new(pattern)
         .map_err(|err| eco_format!("failed to load templates from {pattern}: {err}"))?;
-    tera.register_filter("notty_disable_numbering", notty_disable_numbering_filter);
-    tera.register_filter("notty_demote_headings", notty_demote_headings_filter);
+    tera.register_filter("wb_disable_numbering", wb_disable_numbering_filter);
+    tera.register_filter("wb_demote_headings", wb_demote_headings_filter);
     Ok(tera)
 }
 
@@ -348,8 +348,8 @@ fn load_notes(html_dir: &Path) -> StrResult<HashMap<String, Note>> {
             ));
         }
 
-        let transcludes = collect_targets(&document, "notty-transclusion", &path)?;
-        let links_out = collect_targets(&document, "notty-internal-link", &path)?;
+        let transcludes = collect_targets(&document, "wb-transclusion", &path)?;
+        let links_out = collect_targets(&document, "wb-internal-link", &path)?;
 
         notes.insert(
             id.clone(),
@@ -387,7 +387,7 @@ fn extract_note_id(document: &Html, path: &Path) -> StrResult<String> {
             continue;
         };
         let name = name.to_ascii_lowercase();
-        if (name == "id" || name == "identifier" || name == "notty-id")
+        if (name == "id" || name == "identifier" || name == "wb-id")
             && let Some(content) = element.value().attr("content")
         {
             return Ok(content.to_string());
@@ -778,9 +778,9 @@ fn render_backmatter_section(
         .iter()
         .map(|id| {
             String::new()
-                + "<notty-transclusion target=\""
+                + "<wb-transclusion target=\""
                 + id.as_str()
-                + "\" show-metadata=\"true\" expanded=\"false\" hide-numbering=\"true\" demote-headings=\"true\"></notty-transclusion>"
+                + "\" show-metadata=\"true\" expanded=\"false\" hide-numbering=\"true\" demote-headings=\"true\"></wb-transclusion>"
         })
         .collect::<String>();
 
@@ -924,10 +924,10 @@ fn render_element(
             site,
             templates,
         } => {
-            if tag.eq_ignore_ascii_case("notty-transclusion") {
+            if tag.eq_ignore_ascii_case("wb-transclusion") {
                 let target_raw = element.attr("target").ok_or_else(|| {
                     eco_format!(
-                        "notty-transclusion missing target in {}",
+                        "wb-transclusion missing target in {}",
                         path_display(context)
                     )
                 })?;
@@ -961,13 +961,13 @@ fn render_element(
             citations,
             related,
         } => {
-            if tag.eq_ignore_ascii_case("notty-transclusion") {
+            if tag.eq_ignore_ascii_case("wb-transclusion") {
                 return Err(eco_format!(
-                    "unexpected notty-transclusion in link rendering"
+                    "unexpected wb-transclusion in link rendering"
                 ));
             }
-            if tag.eq_ignore_ascii_case("notty-internal-link")
-                || tag.eq_ignore_ascii_case("notty-cite")
+            if tag.eq_ignore_ascii_case("wb-internal-link")
+                || tag.eq_ignore_ascii_case("wb-cite")
             {
                 let target_raw = element.attr("target").ok_or_else(|| {
                     eco_format!("{} missing target in {}", tag, path_display(context))
@@ -979,27 +979,27 @@ fn render_element(
                         path_display(context)
                     ));
                 }
-                if tag.eq_ignore_ascii_case("notty-cite")
+                if tag.eq_ignore_ascii_case("wb-cite")
                     && let Some(citations) = citations
                 {
                     citations.borrow_mut().insert(target.clone());
                 }
-                if tag.eq_ignore_ascii_case("notty-internal-link")
+                if tag.eq_ignore_ascii_case("wb-internal-link")
                     && let Some(related) = related
                 {
                     related.borrow_mut().insert(target.clone());
                 }
                 let content = render_children(node, context)?;
-                if tag.eq_ignore_ascii_case("notty-cite") {
+                if tag.eq_ignore_ascii_case("wb-cite") {
                     return render_citation(templates, site, &target, &content);
                 }
                 return render_internal_link(templates, site, &target, &content);
             }
         }
         RenderMode::Fragment => {
-            if tag.eq_ignore_ascii_case("notty-transclusion") {
+            if tag.eq_ignore_ascii_case("wb-transclusion") {
                 return Err(eco_format!(
-                    "unexpected notty element in processed fragment"
+                    "unexpected wb- element in processed fragment"
                 ));
             }
         }
@@ -1137,13 +1137,13 @@ fn parse_bool_attr(value: Option<&str>, default: bool) -> bool {
     }
 }
 
-fn notty_disable_numbering_filter(
+fn wb_disable_numbering_filter(
     value: &TeraValue,
     _args: &HashMap<String, TeraValue>,
 ) -> tera::Result<TeraValue> {
     let html = value
         .as_str()
-        .ok_or_else(|| TeraError::msg("notty_disable_numbering expects a string value"))?;
+        .ok_or_else(|| TeraError::msg("wb_disable_numbering expects a string value"))?;
     let mut fragment = Html::parse_fragment(html);
     let headings = {
         let root = fragment.tree.root();
@@ -1167,13 +1167,13 @@ fn notty_disable_numbering_filter(
     Ok(TeraValue::String(rendered))
 }
 
-fn notty_demote_headings_filter(
+fn wb_demote_headings_filter(
     value: &TeraValue,
     _args: &HashMap<String, TeraValue>,
 ) -> tera::Result<TeraValue> {
     let html = value
         .as_str()
-        .ok_or_else(|| TeraError::msg("notty_demote_headings expects a string value"))?;
+        .ok_or_else(|| TeraError::msg("wb_demote_headings expects a string value"))?;
     let mut fragment = Html::parse_fragment(html);
     let headings = {
         let root = fragment.tree.root();
@@ -1199,7 +1199,7 @@ fn notty_demote_headings_filter(
 
 fn normalize_target(raw: &str) -> String {
     let trimmed = raw.trim();
-    let normalized = trimmed.strip_prefix("notty:").unwrap_or(trimmed).trim();
+    let normalized = trimmed.strip_prefix("wb:").unwrap_or(trimmed).trim();
     normalized.to_string()
 }
 

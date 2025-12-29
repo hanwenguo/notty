@@ -12,7 +12,7 @@ const ENV_PATH_SEP: char = if cfg!(windows) { ';' } else { ':' };
 /// The overall structure of the help.
 #[rustfmt::skip]
 const HELP_TEMPLATE: &str = "\
-Notty {version}
+Weibian (wb) {version}
 
 {usage-heading} {usage}
 
@@ -22,14 +22,14 @@ Notty {version}
 /// Adds a list of useful links after the normal help.
 #[rustfmt::skip]
 const AFTER_HELP: &str = color_print::cstr!("\
-<s>Repository:</>                 https://github.com/hanwenguo/notty/
+<s>Repository:</>                 https://github.com/hanwenguo/weibian/
 ");
 
-/// The Notty CLI.
+/// The Weibian CLI.
 #[derive(Debug, Clone, Parser)]
 #[clap(
-    name = "notty",
-    version = crate::notty_version(),
+    name = "wb",
+    version = crate::weibian_version(),
     author,
     help_template = HELP_TEMPLATE,
     after_help = AFTER_HELP,
@@ -48,7 +48,7 @@ pub struct CliArguments {
 /// Arguments shared by all commands.
 #[derive(Debug, Clone, Args)]
 pub struct GlobalArgs {
-    /// Path to a Notty configuration file.
+    /// Path to a Weibian configuration file.
     #[arg(
         long = "config-file",
         value_name = "PATH",
@@ -75,7 +75,7 @@ pub enum Command {
     // /// Initializes a new project from a template.
     // Init(InitCommand),
 
-    // /// Self update the Notty CLI.
+    // /// Self update the Weibian CLI.
     // #[cfg_attr(not(feature = "self-update"), clap(hide = true))]
     // Update(UpdateCommand),
 }
@@ -161,7 +161,7 @@ pub struct CompileArgs {
     #[clap(value_hint = ValueHint::DirPath)]
     pub input: Option<PathBuf>,
 
-    /// Path to intermediate HTML cache directory (defaults to config or ".notty/cache").
+    /// Path to intermediate HTML cache directory (defaults to config or ".wb/cache").
     #[clap(
         long = "cache-dir",
         value_hint = ValueHint::DirPath
@@ -224,7 +224,7 @@ pub struct SiteArgs {
 #[derive(Debug, Clone, Args)]
 pub struct WorldArgs {
     /// Configures the project root (for absolute paths).
-    #[clap(long = "root", env = "NOTTY_ROOT", value_name = "DIR", value_hint = ValueHint::DirPath, default_value = ".")]
+    #[clap(long = "root", env = "WEIBIAN_ROOT", value_name = "DIR", value_hint = ValueHint::DirPath, default_value = ".")]
     pub root: Option<PathBuf>,
 
     /// Add a string key-value pair visible through `sys.inputs`.

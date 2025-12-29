@@ -6,4 +6,4 @@
   identifier: "20250819T220812",
 )
 
-Given that #ln("notty:20250819T220749")[Taking scientific notes need modular reusable snippets for mathematics] and #ln("notty:20250819T220803")[Taking scientific notes needs full-power mathematical typesetting], it is obvious that Markdown, without extensions, does not satisfy any of the two principles, and any of the software-specific extensions that tries to solve these problems does not really solve them, just causing migration friction. This is because mathematics is alien to Markdown --- it is just not part of it, thus there cannot be effective integration.
+Given that #ln("wb:20250819T220749")[Taking scientific notes need modular reusable snippets for mathematics] and #ln("wb:20250819T220803")[Taking scientific notes needs full-power mathematical typesetting], it is obvious that Markdown, without extensions, does not satisfy any of the two principles, and any of the software-specific extensions that tries to solve these problems does not really solve them, just causing migration friction. This is because mathematics is alien to Markdown --- it is just not part of it, thus there cannot be effective integration.

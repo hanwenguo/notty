@@ -1,12 +1,12 @@
 #import "/_template/template.typ": template, tr
 #show: template(
-  title:      [Use Emacs denote package to write in Notty],
+  title:      [Use Emacs denote package to write in Weibian],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 44),
   tags:       (),
   identifier: "20250819T221344",
 )
 
-If you use Emacs, Notty is accompanied by an Emacs Lisp package providing the integration of Notty and the #link("https://protesilaos.com/emacs/denote")[Denote] package. The following is an example of configuration. However, since everyone has different templates, there's a lot of variables to tweak, and you need to read the source code of the package (it's not very big though) to understand how to customize it. A rewrite of the package to make it more idiomatic is planned.
+If you use Emacs, Weibian is accompanied by an Emacs Lisp package providing the integration of Weibian and the #link("https://protesilaos.com/emacs/denote")[Denote] package. The following is an example of configuration. However, since everyone has different templates, there's a lot of variables to tweak, and you need to read the source code of the package (it's not very big though) to understand how to customize it. A rewrite of the package to make it more idiomatic is planned.
 
 ```emacs-lisp
 (use-package denote
@@ -16,14 +16,14 @@ If you use Emacs, Notty is accompanied by an Emacs Lisp package providing the in
 
 (use-package typst-ts-mode)
 
-(use-package denote-notty
-  :load-path "/path/to/notty/directory/"
+(use-package denote-weibian
+  :load-path "/path/to/weibian/directory/"
   :after (denote typst-ts-mode)
   :demand t
   :bind (:map typst-ts-mode-map
-         ("C-c n b" . denote-notty-backlinks)
-         ("C-c n c" . denote-notty-contexts)
-         ("C-c n t" . denote-notty-transclude)
+         ("C-c n b" . denote-weibian-backlinks)
+         ("C-c n c" . denote-weibian-contexts)
+         ("C-c n t" . denote-weibian-transclude)
          ("C-c n l" . denote-link)
          ("C-c n L" . denote-add-links)
          ("C-c n q c" . denote-query-contents-link) ; create link that triggers a grep
@@ -33,7 +33,7 @@ If you use Emacs, Notty is accompanied by an Emacs Lisp package providing the in
          ("C-c n r" . denote-rename-file)
          ("C-c n R" . denote-rename-file-using-front-matter))
   :config
-  (push denote-notty-file-type denote-file-types)
+  (push denote-weibian-file-type denote-file-types)
 
   ;; Customize slugification to allow uppercase letters in signatures; this can also be handled
   ;; at the Typst side.

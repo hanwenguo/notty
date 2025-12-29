@@ -1,7 +1,7 @@
 # generated
 dist/
 # cache
-.notty/cache/
+.wb/cache/
 
 # editor
 .vscode/
