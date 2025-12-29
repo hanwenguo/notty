@@ -82,21 +82,17 @@ After the above features are implemented, Notty will be feature-comparable to Fo
 
 Notty is following the spirit of Forester. Main differences are now:
 
-- Forester uses its own markup language, and Notty uses Typst.
-- Forester, as for now, is way more mature than Notty.
+- Forester uses its own markup language and LaTeX/KaTeX for math, and Notty uses Typst for everything.
+- Forester, as for now, is more mature than Notty.
 - Forester now generates XML and Notty generates HTML.
-
-### [Typsite](https://github.com/Glomzzz/typsite)
-
-Typsite is a project that uses Typst to generate static sites. It is very similar to Notty in that they both generate a static site from a collection of Typst files.
-
-Main differences are:
-
-- Typsite aims to be a general purpose static site generator, and provides many features (e.g. schema, rewriting, etc.) for that. Notty is more focused on being a tool for taking scientific notes, thus more opinionated and less flexible. For example, Notty (will) support generating notes directly from BibTeX files.
 
 ### [Kodama](https://github.com/kokic/kodama)
 
-Kodama is a similar project that uses Typst and Markdown to manage notes. The main difference is that Kodama uses Markdown as the primary note format, while Notty uses Typst.
+Kodama is a similar project that uses Typst and Markdown to manage notes. The main difference is that Kodama uses Markdown as the primary note format with good Typst support, while Notty uses Typst as the only note format.
+
+### [Typsite](https://github.com/Glomzzz/typsite)
+
+Typsite is a project that uses Typst to generate static sites. It is very similar to Notty in that they both generate a static site from a collection of Typst files. However, Typsite aims to be a general purpose static site generator, and provides many features (e.g. schema, rewriting, etc.) for that. Notty is more focused on being a tool for taking scientific notes, thus more opinionated and less flexible.
 
 ## License
 
