@@ -9,6 +9,8 @@
   math-fonts: ("IBM Plex Math",),
 )
 
+#let notty-config = toml("../.notty/config.toml")
+
 #let html-metadata-taxon-map = (
   :
 )
