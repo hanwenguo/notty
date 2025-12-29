@@ -56,13 +56,13 @@ notty compile \
 - Utilizes Typst HTML export: just use your templates/styles
 - Transclusion of notes
 - Backmatter generation (backlinks and contexts)
+- TOC generation
 
 ## Planned
 
-- TOC generation
 - Bibliography support; most importantly, the References backmatter section
 
-Notty plans to release v1.0 after implementing the above two features. 
+Notty plans to release v1.0 after implementing the above feature. 
 
 - Customizable post-processing hooks
 - Datalog-based querying of notes
