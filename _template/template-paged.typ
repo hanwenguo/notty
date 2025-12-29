@@ -141,5 +141,7 @@
 
 #let ln-paged(dest, body) = link(dest, body)
 
+#let ct-paged(dest, body) = link(dest, body)
+
 // #let tr-paged(url, show-metadata: false, expanded: true) = par(link(url))
 #let tr-paged(url, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = heading(depth: 2)[TRANSCUSION: #url]

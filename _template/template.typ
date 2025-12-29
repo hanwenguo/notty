@@ -1,5 +1,5 @@
 #import "/_template/site.typ": config
-#import "/_template/template-paged.typ": template-paged, ln-paged, tr-paged
+#import "/_template/template-paged.typ": template-paged, ln-paged, ct-paged, tr-paged
 
 #let target = sys.inputs.at("notty-target", default: none)
 
@@ -182,6 +182,14 @@
   show raw.where(block: false): it => html.code(it.text)
   show raw.where(block: true): it => html.pre(it.text)
 
+  show link: it => html.span(
+    class: "link external",
+    html.a(
+      href: it.dest,
+      it.body
+    )
+  )
+
   show footnote: it => html.aside(it.body)
   
   html.html({
@@ -224,6 +232,23 @@
   ln-html
 } else {
   ln-paged
+}
+
+#let ct-html(dest, body) = {
+  html.span(
+    class: "link local",
+    html.elem(
+      "notty-cite",
+      attrs: (target: dest),
+      body
+    )
+  )
+}
+
+#let ct = if target == "html" {
+  ct-html
+} else {
+  ct-paged
 }
 
 #let tr-html(id, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
