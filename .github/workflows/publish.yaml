@@ -10,17 +10,21 @@ jobs:
     name: Create GitHub release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     steps:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           prerelease: ${{ contains(github.ref, '-') }}
 
-  publish:
-    name: Publish for ${{ matrix.target }}
+  build:
+    name: Build for ${{ matrix.target }}
     needs: [create-release]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -69,10 +73,27 @@ jobs:
           Copy-Item README.md dist\\package\\
           Compress-Archive -Path dist\\package\\* -DestinationPath dist\\wb-${{ matrix.target }}.zip
 
-      - name: Upload release assets
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wb-${{ matrix.target }}
+          path: dist/wb-${{ matrix.target }}.${{ matrix.archive }}
+
+  upload-release-assets:
+    name: Upload release assets
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/wb-${{ matrix.target }}.${{ matrix.archive }}
+          files: artifacts/**/*
           prerelease: ${{ contains(github.ref, '-') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
