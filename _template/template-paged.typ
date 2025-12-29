@@ -3,8 +3,9 @@
 #let sans-fonts = ("Inter", "IBM Plex Sans", "IBM Plex Sans SC")
 #let serif-fonts = ("Libertinus Serif", "IBM Plex Serif")
 
-#let _default-metadata(date, identifier, ..attrs) = {
+#let _default-metadata(identifier, ..attrs) = {
   let author = attrs.at("author", default: site.config.default-author.name)
+  let date = attrs.at("date", default: none)
   [#block(width: 100%, [
     #set text(font: sans-fonts, size: 11pt)
     #if author != none { author }
@@ -14,20 +15,19 @@
   ]) <metadata>]
 }
 
-#let _metadata(date, identifier, ..attrs) = {
+#let _metadata(identifier, ..attrs) = {
   let taxon = attrs.at("taxon", default: none)
   if taxon != none {
     let f = site.paged-metadata-taxon-map.at(taxon, default: _default-metadata)
-    f(date, identifier, ..attrs)
+    f(identifier, ..attrs)
   } else {
-    _default-metadata(date, identifier, ..attrs)
+    _default-metadata(identifier, ..attrs)
   }
 }
 
 #let _main-part(
   content,
   title: none,
-  date: none,
   identifier: none,
   ..attrs,
 ) = {
@@ -40,7 +40,7 @@
     }
     title
   })
-  _metadata(date, identifier, ..attrs)
+  _metadata(identifier, ..attrs)
   content
 }
 
@@ -48,12 +48,8 @@
 
 #let template-paged(
   title: "",
-  date: none,
   identifier: none,
   ..attrs,
-  // author: none,
-  // taxon: none,
-  // lang: site.config.lang,
 ) = doc => {
   set page(
     paper: "us-letter",
@@ -124,16 +120,19 @@
 
   (
     [#metadata((
-        title: title,
-        date: date.display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]"),
         identifier: identifier,
+        title: title,
+        date: if attrs.at("date", default: none) != none {
+          attrs.date.display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]")
+        } else {
+          none
+        },
       )) <frontmatter>]
   )
   _main-part(
     doc,
-    title: title,
-    date: date,
     identifier: identifier,
+    title: title,
     ..attrs,
   )
 }

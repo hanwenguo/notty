@@ -38,9 +38,9 @@
 
 #let _summary_header(
   level: 1,
-  title: none,
-  identifier: none,
   inline: false,
+  identifier: none,
+  title: none,
   ..attrs,
 ) = {
   html.summary(
@@ -62,57 +62,33 @@
       })
       html.div(class: "metadata", {
         html.ul({
+          if attrs.at("date", default: none) != none {
+            html.li(class: "meta-item", {
+              attrs.at("date").display("[month repr:long] [day], [year]")
+            })
+          }
         })
       })
     })
   )
 }
 
-// #let _section(
-//   body,
-//   level: 1,
-//   identifier: none,
-//   title: none,
-//   ..attrs,
-// ) = {
-//   html.section(
-//     class: "block",
-//     html.details(
-//       open: true,
-//       {
-//         html.summary(html.header({
-//           html.elem("h" + str(level), attrs: (id: identifier), {
-//             if attrs.at("taxon", default: none) != none {
-//               html.span(class: "taxon", attrs.at("taxon"))
-//             }
-//             title
-//             " "
-//             if identifier != none {
-//               html.a(class: "slug", href: config.root-path + identifier + ".html", "[" + identifier + "]")
-//             }
-//           })
-//           html.div(class: "metadata", {
-//             html.ul({
-//             })
-//           })
-//         }))
-//         body
-//       }
-//     )
-//   )
-// }
-
 #let _head(
   identifier: none,
   title: none,
-  date: none,
-  author: none,
   ..attrs,
 ) = {
   html.head({
     html.meta(name: "identifier", content: identifier)
-    html.meta(name: "author", content: author)
-    html.meta(name: "date", content: date.display("[year]-[month]-[day]T[hour]:[minute]:[second]Z"))
+    if attrs.at("taxon", default: none) != none {
+      html.meta(name: "taxon", content: attrs.at("taxon"))
+    }
+    if attrs.at("author", default: none) != none {
+      html.meta(name: "author", content: attrs.at("author"))
+    }
+    if attrs.at("date", default: none) != none {
+      html.meta(name: "date", content: attrs.at("date").display("[year]-[month]-[day]T[hour]:[minute]:[second]Z"))
+    }
     html.title(plain-text(title))
   })
 }
@@ -121,8 +97,6 @@
   body,
   identifier: none,
   title: none,
-  date: none,
-  author: none,
   ..attrs,
 ) = {
   // html.body(_section(
@@ -136,9 +110,9 @@
   // ))
   html.body({
     _summary_header(
+      level: 1,
       identifier: identifier,
       title: title,
-      level: 1,
       ..attrs
     ) 
     body
@@ -156,10 +130,10 @@
       open: true,
       {
         _summary_header(
-          identifier: identifier,
-          title: title,
           level: 2,
           inline: true,
+          identifier: identifier,
+          title: title,
           ..attrs
         )
         body
@@ -168,13 +142,9 @@
   )
 
 #let template-html(
-  title: "", 
-  date: datetime.today(),
-  author: "",
   identifier: "",
+  title: "", 
   ..attrs,
-  // taxon: none,
-  // lang: site.config.lang,
 ) = (doc) => {
   show math.equation.where(block: false): it => html.span(class: "math-inline", html.frame(it))
   show math.equation.where(block: true): it => html.div(class: "math-display", html.frame(it))
@@ -194,18 +164,14 @@
   
   html.html({
     _head(
-      title: title,
-      date: date,
-      author: author,
       identifier: identifier,
+      title: title,
       ..attrs
     )
     _body(
       doc,
-      title: title,
-      date: date,
-      author: author,
       identifier: identifier,
+      title: title,
       ..attrs
     )
   })
