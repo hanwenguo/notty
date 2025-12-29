@@ -2,7 +2,7 @@
 input_dir = "typ"
 output_dir = "dist"
 public_dir = "public"
-cache_dir = ".wb/cache"
+# cache_dir = ".wb/cache" # optional; defaults to a project-specific temp dir if omitted
 # the above is the equivalent of the corresponding CLI flags
 
 [site]

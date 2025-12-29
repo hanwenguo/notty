@@ -67,7 +67,7 @@ The following is an example  configuration file:
 input_dir = "typ"
 output_dir = "dist"
 public_dir = "public"
-cache_dir = ".wb/cache"
+# cache_dir = ".wb/cache" # optional; defaults to a project-specific temp dir if omitted
 # the above is the equivalent of the corresponding CLI flags
 
 [site]
@@ -76,7 +76,7 @@ root_dir = "/" # the root directory of the site; for example, if the site is hos
 trailing_slash = true # if true, the final URL of each note will have a trailing slash
 ```
 
-The configuration file is parsed at the start of the program, and values are used as defaults for the corresponding CLI flags. By default, the configuration file is looked for in `.wb/config.toml` relative to the project root, but a different path can be specified with `--config-file <PATH>`. Site settings can also be overridden via CLI with `--site-domain`, `--site-root-dir`, and `--trailing-slash <BOOL>`.
+The configuration file is parsed at the start of the program, and values are used as defaults for the corresponding CLI flags. If `cache_dir` is omitted, Weibian uses a project-specific directory under the system temporary directory for intermediate HTML. By default, the configuration file is looked for in `.wb/config.toml` relative to the project root, but a different path can be specified with `--config-file <PATH>`. Site settings can also be overridden via CLI with `--site-domain`, `--site-root-dir`, and `--trailing-slash <BOOL>`.
 
 The `trailing_slash` option will affect how internal links are generated and how the output files are organized. If `trailing_slash` is true, each note will be saved in a subdirectory named after its ID, with an `index.html` file inside (e.g., a note with ID `note-123` will be saved as `dist/note-123/index.html`). If false, each note will be saved directly as an HTML file named after its ID (e.g., `dist/note-123.html`). The `root_dir` setting only affects link generation; it does not change where files are written. Special case: a note with ID `index` is always saved as `dist/index.html` and links to the site root.
 ]

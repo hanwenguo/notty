@@ -1,7 +1,5 @@
 # generated
 dist/
-# cache
-.wb/cache/
 
 # editor
 .vscode/

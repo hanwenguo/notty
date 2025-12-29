@@ -962,13 +962,9 @@ fn render_element(
             related,
         } => {
             if tag.eq_ignore_ascii_case("wb-transclusion") {
-                return Err(eco_format!(
-                    "unexpected wb-transclusion in link rendering"
-                ));
+                return Err(eco_format!("unexpected wb-transclusion in link rendering"));
             }
-            if tag.eq_ignore_ascii_case("wb-internal-link")
-                || tag.eq_ignore_ascii_case("wb-cite")
-            {
+            if tag.eq_ignore_ascii_case("wb-internal-link") || tag.eq_ignore_ascii_case("wb-cite") {
                 let target_raw = element.attr("target").ok_or_else(|| {
                     eco_format!("{} missing target in {}", tag, path_display(context))
                 })?;
@@ -998,9 +994,7 @@ fn render_element(
         }
         RenderMode::Fragment => {
             if tag.eq_ignore_ascii_case("wb-transclusion") {
-                return Err(eco_format!(
-                    "unexpected wb- element in processed fragment"
-                ));
+                return Err(eco_format!("unexpected wb- element in processed fragment"));
             }
         }
     }

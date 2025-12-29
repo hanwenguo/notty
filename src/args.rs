@@ -161,7 +161,8 @@ pub struct CompileArgs {
     #[clap(value_hint = ValueHint::DirPath)]
     pub input: Option<PathBuf>,
 
-    /// Path to intermediate HTML cache directory (defaults to config or ".wb/cache").
+    /// Path to intermediate HTML cache directory (defaults to config or a
+    /// project-specific directory under the system temp directory).
     #[clap(
         long = "cache-dir",
         value_hint = ValueHint::DirPath

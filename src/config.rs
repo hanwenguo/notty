@@ -1,3 +1,5 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 use ecow::eco_format;
@@ -80,11 +82,11 @@ impl BuildConfig {
             config.directories.input_dir.as_ref(),
             "typ",
         );
-        let html_cache_directory = resolve_dir(
-            args.html_cache.as_ref(),
-            config.directories.cache_dir.as_ref(),
-            ".wb/cache",
-        );
+        let html_cache_directory = args
+            .html_cache
+            .clone()
+            .or_else(|| config.directories.cache_dir.clone())
+            .unwrap_or_else(|| default_html_cache_dir(&input_directory));
         let public_directory = resolve_dir(
             args.public.as_ref(),
             config.directories.public_dir.as_ref(),
@@ -131,6 +133,28 @@ fn resolve_dir(cli: Option<&PathBuf>, config: Option<&PathBuf>, default: &str) -
     cli.cloned()
         .or_else(|| config.cloned())
         .unwrap_or_else(|| PathBuf::from(default))
+}
+
+fn default_html_cache_dir(input_directory: &Path) -> PathBuf {
+    let mut base = std::env::temp_dir();
+    base.push("weibian");
+    base.push("html-cache");
+
+    let absolute_input = if input_directory.is_absolute() {
+        input_directory.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map(|cwd| cwd.join(input_directory))
+            .unwrap_or_else(|_| input_directory.to_path_buf())
+    };
+    let canonical_input = absolute_input.canonicalize().unwrap_or(absolute_input);
+
+    let mut hasher = DefaultHasher::new();
+    canonical_input.hash(&mut hasher);
+    let hash = hasher.finish();
+    base.push(format!("{:016x}", hash));
+
+    base
 }
 
 fn normalize_root_dir(raw: Option<&str>) -> String {
