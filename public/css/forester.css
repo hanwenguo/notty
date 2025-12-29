@@ -38,6 +38,68 @@ h6 { counter-increment: heading-6; --num: counter(heading-2) "." counter(heading
   }
 }
 
+nav#toc {
+  counter-reset: toc-2;
+}
+
+nav#toc > div.block > ul > li {
+  counter-reset: toc-3;
+}
+
+nav#toc > div.block > ul > li > ul > li {
+  counter-reset: toc-4;
+}
+
+nav#toc > div.block > ul > li > ul > li > ul > li {
+  counter-reset: toc-5;
+}
+
+nav#toc > div.block > ul > li > ul > li > ul > li > ul > li {
+  counter-reset: toc-6;
+}
+
+nav#toc > div.block > ul > li > a.link.local /* h2 */ {
+  counter-increment: toc-2;
+  --num: counter(toc-2);
+}
+
+nav#toc > div.block > ul > li > ul > li > a.link.local /* h3 */ {
+  counter-increment: toc-3;
+  --num: counter(toc-2) "." counter(toc-3);
+}
+
+nav#toc > div.block > ul > li > ul > li > ul > li > a.link.local /* h4 */ {
+  counter-increment: toc-4;
+  --num: counter(toc-2) "." counter(toc-3) "." counter(toc-4);
+}
+
+nav#toc > div.block > ul > li > ul > li > ul > li > ul > li > a.link.local /* h5 */ {
+  counter-increment: toc-5;
+  --num: counter(toc-2) "." counter(toc-3) "." counter(toc-4) "." counter(toc-5);
+}
+
+nav#toc > div.block > ul > li > ul > li > ul > li > ul > li > ul > li > a.link.local /* h6 */ {
+  counter-increment: toc-6;
+  --num: counter(toc-2) "." counter(toc-3) "." counter(toc-4) "." counter(toc-5) "." counter(toc-6);
+}
+
+
+:is(nav#toc > div.block > ul > li > a.link.local, /* h2 */
+nav#toc > div.block > ul > li > ul > li > a.link.local, /* h3 */
+nav#toc > div.block > ul > li > ul > li > ul > li > a.link.local, /* h4 */
+nav#toc > div.block > ul > li > ul > li > ul > li > ul > li > a.link.local, /* h5 */
+nav#toc > div.block > ul > li > ul > li > ul > li > ul > li > ul > li > a.link.local) {
+  &.disable-numbering {
+    counter-increment: none;
+    &:before { content: none; }
+    & > .taxon:after { content: ". "; }
+  }
+  &:not(.disable-numbering) {
+    &:not(:has(> .taxon)):before { content: var(--num) ". "; }
+    & > .taxon:after { content: " " var(--num) ". "; }
+  }
+}
+
 h1,
 h2,
 h3,
