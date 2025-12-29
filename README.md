@@ -1,6 +1,6 @@
 # Notty: NOte Taking with TYpst
 
-Notty is a Typst-first note system in the spirit of [Forester](https://www.forester-notes.org/index/index.xml). It compiles Typst notes to HTML, then post-processes the HTML to resolve transclusions, internal links, and backmatter (backlinks/contexts).
+Notty is a Typst-first note system in the spirit of [Forester](https://www.forester-notes.org/index/index.xml). It compiles Typst notes to HTML, then post-processes the HTML to resolve transclusion, internal links, and backmatter (backlinks/contexts).
 
 There is a [demo site](https://hanwenguo.github.io/notty/) showcasing Notty's features, built with Notty itself as a live example.
 
@@ -76,7 +76,7 @@ After the above features are implemented, Notty will be feature-comparable to Fo
 - More templating support
 - Parallel processing of notes
 
-## Differences from Simalar Projects
+## Differences from Similar Projects
 
 ### [Forester](https://www.forester-notes.org/index/index.xml)
 
