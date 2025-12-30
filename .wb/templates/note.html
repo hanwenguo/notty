@@ -12,16 +12,18 @@
     {{ note.head | safe }}
   </head>
   <body>
-    {% if note.id != "index" %}
-    <header class="header">
-      <nav class="nav">
-        <div class="logo">
-          <a href="{{ site.root_dir }}" title="Home">« Home</a>
-        </div>
-      </nav>
-    </header>
-    {% endif %}
     <div id="grid-wrapper">
+      
+      <header class="header">
+        {% if note.id != "index" %}
+        <nav class="nav">
+          <div class="logo">
+            <a href="{{ site.root_dir }}" title="Home">« Home</a>
+          </div>
+        </nav>
+        {% endif %}
+      </header>
+      
       <article>
         <section class="block">
           <details open>
@@ -43,16 +45,19 @@
             <li>
               <a href="{{site.root_dir}}{{ h2.id }}/" class="bullet">■</a>
               <a href="#{{ h2.id }}" class="link local {%- if h2.disable_numbering %} disable-numbering{%- endif -%}">{{ h2.content | safe }}</a>
+              {% if h2.children | length > 0 %}
               <ul class="block">
                 {% for h3 in h2.children %}
                 <li>
                   <a href="{{site.root_dir}}{{ h3.id }}/" class="bullet">■</a>
                   <a href="#{{ h3.id }}" class="link local {%- if h3.disable_numbering %} disable-numbering{%- endif -%}">{{ h3.content | safe }}</a>
+                  {% if h3.children | length > 0 %}
                   <ul class="block">
                     {% for h4 in h3.children %}
                     <li>
                       <a href="{{site.root_dir}}{{ h4.id }}/" class="bullet">■</a>
                       <a href="#{{ h4.id }}" class="link local {%- if h4.disable_numbering %} disable-numbering{%- endif -%}">{{ h4.content | safe }}</a>
+                      {% if h4.children | length > 0 %}
                       <ul class="block">
                         {% for h5 in h4.children %}
                         <li>
@@ -61,12 +66,15 @@
                         </li>
                         {% endfor %}
                       </ul>
+                      {% endif %}
                     </li>
                     {% endfor %}
                   </ul>
+                  {% endif %}
                 </li>
                 {% endfor %}
               </ul>
+              {% endif %}
             </li>
             {% endfor %}
           </ul>
