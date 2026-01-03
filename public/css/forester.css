@@ -26,7 +26,7 @@
   --color-background: light-dark(#ffffff, #000000); /* bg-main */
   --color-border: light-dark(#9f9f9f, #646464); /* border */
   --color-accent: light-dark(#b2e4dc, #45605e); /* bg-hover */
-  --color-accent-hover: light-dark(#b2e4dc80, #45605ea0); /* bg-hover with opacity */
+  --color-accent-hover: light-dark(#b2e4dc28, #45605e40); /* bg-hover with opacity */
   --color-error: light-dark(#a60000, #ff5f59); /* err */
   --color-info: light-dark(#005f5f, #6ae4b9); /* info */
   --color-mark: light-dark(#dae5ec, #2f3849); /* bg-hl-line */
