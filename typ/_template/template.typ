@@ -154,8 +154,28 @@
   title: "", 
   ..attrs,
 ) = (doc) => {
-  show math.equation.where(block: false): it => html.span(class: "math-inline", html.frame(it))
-  show math.equation.where(block: true): it => html.div(class: "math-display", html.frame(it))
+  show math.equation: set text(font: site.config.math-fonts)
+
+  show math.equation.where(block: false): it => {
+    {
+      set text(site.config.foreground-color.at(0))
+      html.span(class: "math-inline color-light", html.frame(it))
+    }
+    {
+      set text(site.config.foreground-color.at(1))
+      html.span(class: "math-inline color-dark", html.frame(it))
+    }
+  }
+  show math.equation.where(block: true): it => {
+    {
+      set text(site.config.foreground-color.at(0))
+      html.div(class: "math-display color-light", html.frame(it))
+    }
+    {
+      set text(site.config.foreground-color.at(1))
+      html.div(class: "math-display color-dark", html.frame(it))
+    }
+  }
 
   show raw.where(block: false): it => html.code(it.text)
   show raw.where(block: true): it => html.pre(it.text)

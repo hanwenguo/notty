@@ -87,6 +87,10 @@ a {
 :is(h5, h6, p) {
   margin-block-start: 0;
   margin-block-end: 1lh;
+
+  &:last-child, &:has(+ .math-display) {
+    margin-block-end: var(--space-sm);
+  }
 }
 
 /* Details heading sizes */
@@ -184,6 +188,27 @@ math {
 
 mrow:hover {
   background-color: var(--color-accent-hover);
+}
+
+.math-display {
+  margin-block: var(--space-md);
+
+  svg {
+    display: block;
+    margin-inline: auto;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .color-dark {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .color-light {
+    display: none;
+  }
 }
 
 /* ========================================
