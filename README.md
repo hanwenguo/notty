@@ -56,6 +56,7 @@ wb compile \
 ## Features
 
 - Utilizes Typst HTML export: just use your templates/styles
+- Out-of-the-box dark mode support
 - Transclusion of notes
 - Backmatter generation (backlinks, contexts, references, related notes)
 - TOC generation
@@ -69,11 +70,12 @@ wb compile \
 
 After the above features are implemented, Weibian will be feature-comparable to Forester. There are also some other nice-to-have features:
 
-- Out-of-the-box dark mode support
-- Watch mode for live updates
+- Watch mode
 - Pre-processing hook on source files (this can enable generating PDFs, for example)
 - More templating support
 - Parallel processing of notes
+
+These will be on the roadmap for version 2.0.
 
 ## Differences from Similar Projects
 
