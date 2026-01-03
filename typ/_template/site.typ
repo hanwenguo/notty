@@ -8,6 +8,7 @@
   ),
   trailing-slash: true,
   math-fonts: ("IBM Plex Math",),
+  foreground-color: (rgb("#000000"), rgb("#ffffff"))
 )
 
 #let html-metadata-taxon-map = (

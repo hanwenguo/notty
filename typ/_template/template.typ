@@ -177,8 +177,20 @@
     }
   }
 
-  show raw.where(block: false): it => html.code(it.text)
-  show raw.where(block: true): it => html.pre(it.text)
+  // https://github.com/miikanissi/modus-themes.nvim/tree/master/extras/bat
+  show raw.where(block: true): it => {
+    {
+      set raw(theme: "/_template/modus_operandi.tmTheme")
+      html.div(class: "color-light", it)
+    }
+    {
+      set raw(theme: "/_template/modus_vivendi.tmTheme")
+      html.div(class: "color-dark", it)
+    }
+  }
+
+  // show raw.where(block: false): it => html.code(it.text)
+  // show raw.where(block: true): it => html.pre(it.text)
 
   show link: it => html.span(
     class: "link external",

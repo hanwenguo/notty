@@ -157,6 +157,9 @@ h6 { counter-increment: heading-6; --num: counter(heading-2) "." counter(heading
 pre,
 code {
   border-radius: var(--radius);
+}
+
+code:not(:is(pre code)) {
   color: var(--color-text-emphasis);
 }
 
@@ -198,6 +201,10 @@ mrow:hover {
     margin-inline: auto;
   }
 }
+
+/* ========================================
+   Color Scheme Specific Styles
+   ======================================== */
 
 @media (prefers-color-scheme: light) {
   .color-dark {
