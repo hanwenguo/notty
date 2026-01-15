@@ -822,3 +822,54 @@ hr {
 ninja-keys::part(ninja-action) {
   white-space: nowrap;
 }
+
+@media (width > 1000px) {
+  #grid-wrapper > article {
+    position: relative;
+  }
+
+  aside {
+    text-align: left;
+    font-size: var(--font-size-sm);
+    max-inline-size: 16rem;
+    position: absolute;
+    /* float: right; */
+    /* clear: right; */
+    /* margin-right: -18rem; */
+    right: -40%;
+    margin-top: var(--space-xs);
+    margin-bottom: var(--space-xs);
+  }
+
+  #grid-wrapper > article,
+  #grid-wrapper > article > section,
+  #grid-wrapper > article > section > details {
+    overflow: visible;
+  }
+}
+
+@media (width <= 1000px) {
+  aside {
+    font-size: var(--font-size-sm);
+    float: none;
+    clear: none;
+    position: relative;
+    margin: 1rem 0 1rem auto;
+    padding: 1rem .5rem;
+    left: 0;
+    bottom: 0;
+    text-align: left;
+    width: initial;
+    max-width: 85%;
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+  }
+
+  aside::after {
+    content: "sidenote";
+    font-size: 10px;
+    position: absolute;
+    right: 0;
+    bottom: 0.1rem;
+  }
+}
