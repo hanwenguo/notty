@@ -63,6 +63,28 @@ pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
     Ok(output_dir.clone())
 }
 
+fn generate_inputs_from_build_config(build_config: &BuildConfig) -> Vec<String> {
+    let mut inputs = Vec::new();
+    inputs.push(format!(
+        "wb-domain={}",
+        build_config.site.domain.as_deref().unwrap_or("")
+    ));
+    inputs.push(format!(
+        "wb-root-dir={}",
+        build_config.site.root_dir
+    ));
+    inputs.push(format!(
+        "wb-trailing-slash={}",
+        if build_config.site.trailing_slash {
+            "true"
+        } else {
+            "false"
+        }
+    ));
+    inputs.push("wb-target=html".to_string());
+    inputs
+}
+
 fn compile_typst_file(
     build_config: &BuildConfig,
     source: &Path,
@@ -109,7 +131,9 @@ fn compile_typst_file(
         cmd.arg("--package-cache-path").arg(path);
     }
 
-    cmd.arg("--input").arg("wb-target=html");
+    for input in generate_inputs_from_build_config(build_config) {
+        cmd.arg("--input").arg(input);
+    }
 
     cmd.arg(source).arg(&output_path);
 

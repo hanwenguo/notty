@@ -1,6 +1,13 @@
 #import "/_template/site.typ"
 #import "/_template/template-paged.typ": template-paged, ln-paged, ct-paged, tr-paged
 
+#let domain = sys.inputs.at("wb-domain", default: "")
+#let root-dir = sys.inputs.at("wb-root-dir", default: "/")
+#let trailing-slash = if sys.inputs.at("wb-trailing-slash", default: "false") == "true" {
+  true
+} else {
+  false
+}
 #let target = sys.inputs.at("wb-target", default: none)
 
 #let _sequence = [].func()
@@ -140,7 +147,7 @@
           let href = if inline {
             "#" + identifier
           } else {
-            site.config.root-path + identifier + (if site.config.trailing-slash { "/" } else { ".html" })
+            root-dir + identifier + (if trailing-slash { "/" } else { ".html" })
           }
           html.a(class: "slug", href: href, "[" + identifier + "]")
         }
