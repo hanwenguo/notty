@@ -1,8 +1,9 @@
-#import "/_template/template.typ": template, tr
+#import "/_template/template.typ": template, tr, ln
 #show: template(
   title:      [Taking scientific notes need modular reusable snippets for mathematics],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 07, second: 49),
   tags:       (),
+  author: ("hanwenguo",),
   identifier: "20250819T220749",
 )
 

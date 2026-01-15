@@ -1,8 +1,9 @@
-#import "/_template/template.typ": template, tr, inline-tree
+#import "/_template/template.typ": template, tr, ln, inline-tree
 #show: template(
   title:      [Writing in Weibian],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 29),
   tags:       (),
+  author: ("hanwenguo",),
   identifier: "20250819T221329",
 )
 

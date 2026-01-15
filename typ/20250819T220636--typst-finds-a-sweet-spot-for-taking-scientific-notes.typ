@@ -1,8 +1,9 @@
-#import "/_template/template.typ": template, tr
+#import "/_template/template.typ": template, tr, ln
 #show: template(
   title:      [Typst finds a sweet spot for taking scientific notes],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 06, second: 36),
   tags:       (),
+  author: ("hanwenguo",),
   identifier: "20250819T220636",
 )
 

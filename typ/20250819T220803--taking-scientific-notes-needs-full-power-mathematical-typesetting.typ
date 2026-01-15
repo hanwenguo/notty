@@ -1,8 +1,9 @@
-#import "/_template/template.typ": template, tr
+#import "/_template/template.typ": template, tr, ln
 #show: template(
   title:      [Taking scientific notes needs full-power mathematical typesetting],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 08, second: 03),
   tags:       (),
+  author: ("hanwenguo",),
   identifier: "20250819T220803",
 )
 

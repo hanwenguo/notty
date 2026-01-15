@@ -36,6 +36,42 @@
   }
 }
 
+#let ln-html(dest, body) = {
+  html.span(
+    class: "link local",
+    html.elem(
+      "wb-internal-link",
+      attrs: (target: dest),
+      body
+    )
+  )
+}
+
+#let ct-html(dest, body) = {
+  html.span(
+    class: "link local",
+    html.elem(
+      "wb-cite",
+      attrs: (target: dest),
+      body
+    )
+  )
+}
+
+#let tr-html(id, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
+  html.elem(
+    "wb-transclusion",
+    attrs: (
+      target: id,
+      show-metadata: if show-metadata { "true" } else { "false" },
+      expanded: if expanded { "true" } else { "false" },
+      disable-numbering: if disable-numbering { "true" } else { "false" },
+      demote-headings: if demote-headings { "true" } else { "false" }
+    )
+  )
+}
+
+
 #let _summary_header(
   level: 1,
   inline: false,
@@ -67,6 +103,17 @@
               attrs.at("date").display("[month repr:long] [day], [year]")
             })
           }
+          if attrs.at("author", default: none) != none {
+            html.li(class: "meta-item", html.address(class: "author", {
+              attrs.at("author").map((a) => {
+                if type(a) == str {
+                  ln-html("wb:" + a)[]
+                } else {
+                  a
+                }
+              }).join(", ")
+            }))
+          }
         })
       })
     })
@@ -82,12 +129,6 @@
     html.meta(name: "identifier", content: identifier)
     if attrs.at("taxon", default: none) != none {
       html.meta(name: "taxon", content: attrs.at("taxon"))
-    }
-    if attrs.at("author", default: none) != none {
-      html.meta(name: "author", content: attrs.at("author"))
-    }
-    if attrs.at("date", default: none) != none {
-      html.meta(name: "date", content: attrs.at("date").display("[year]-[month]-[day]T[hour]:[minute]:[second]Z"))
     }
     html.title(plain-text(title))
   })
@@ -223,51 +264,16 @@
   template-paged
 }
 
-#let ln-html(dest, body) = {
-  html.span(
-    class: "link local",
-    html.elem(
-      "wb-internal-link",
-      attrs: (target: dest),
-      body
-    )
-  )
-}
-
 #let ln = if target == "html" {
   ln-html
 } else {
   ln-paged
 }
 
-#let ct-html(dest, body) = {
-  html.span(
-    class: "link local",
-    html.elem(
-      "wb-cite",
-      attrs: (target: dest),
-      body
-    )
-  )
-}
-
 #let ct = if target == "html" {
   ct-html
 } else {
   ct-paged
-}
-
-#let tr-html(id, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
-  html.elem(
-    "wb-transclusion",
-    attrs: (
-      target: id,
-      show-metadata: if show-metadata { "true" } else { "false" },
-      expanded: if expanded { "true" } else { "false" },
-      disable-numbering: if disable-numbering { "true" } else { "false" },
-      demote-headings: if demote-headings { "true" } else { "false" }
-    )
-  )
 }
 
 #let tr = if target == "html" {

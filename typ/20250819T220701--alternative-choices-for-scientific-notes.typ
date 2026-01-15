@@ -3,6 +3,7 @@
   title:      [Alternative choices for scientific notes],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 07, second: 01),
   tags:       (),
+  author: ("hanwenguo",),
   identifier: "20250819T220701",
 )
 

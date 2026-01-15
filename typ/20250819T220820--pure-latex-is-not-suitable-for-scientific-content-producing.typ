@@ -1,8 +1,9 @@
-#import "/_template/template.typ": template, tr
+#import "/_template/template.typ": template, tr, ln
 #show: template(
   title:      [Pure LaTeX is not suitable for scientific content producing],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 08, second: 20),
   tags:       (),
+  author: ("hanwenguo",),
   identifier: "20250819T220820",
 )
 

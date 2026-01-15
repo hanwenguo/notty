@@ -1,14 +1,15 @@
-#import "/_template/template.typ": template, tr
+#import "/_template/template.typ": template, tr, ln
 #show: template(
   title:      [Use Emacs denote package to write in Weibian],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 44),
   tags:       (),
+  author: ("hanwenguo",),
   identifier: "20250819T221344",
 )
 
 If you use Emacs, Weibian is accompanied by an Emacs Lisp package providing the integration of Weibian and the #link("https://protesilaos.com/emacs/denote")[Denote] package. The following is an example of configuration. However, since everyone has different templates, there's a lot of variables to tweak, and you need to read the source code of the package (it's not very big though) to understand how to customize it. A rewrite of the package to make it more idiomatic is planned.
 
-```emacs-lisp
+```lisp
 (use-package denote
   :bind (("C-c n n" . denote))
   :config

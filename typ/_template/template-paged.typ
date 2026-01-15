@@ -4,7 +4,7 @@
 #let serif-fonts = ("Libertinus Serif", "IBM Plex Serif")
 
 #let _default-metadata(identifier, ..attrs) = {
-  let author = attrs.at("author", default: site.config.default-author.name)
+  let author = attrs.at("author", default: none)
   let date = attrs.at("date", default: none)
   [#block(width: 100%, [
     #set text(font: sans-fonts, size: 11pt)
@@ -32,7 +32,6 @@
   ..attrs,
 ) = {
   let taxon = attrs.at("taxon", default: none)
-  let author = attrs.at("author", default: site.config.default-author.name)
   heading(depth: 1, {
     if taxon != none {
       set text(style: "italic")

@@ -1,7 +1,6 @@
 #import "/_template/template.typ": template, tr, ln, inline-tree
 #show: template(
   title:      [Weibian],
-  date:       datetime(year: 2025, month: 06, day: 19, hour: 22, minute: 30, second: 48),
   tags:       (),
   identifier: "index",
   taxon:  "Software",
