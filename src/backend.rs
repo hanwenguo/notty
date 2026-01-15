@@ -142,6 +142,7 @@ pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()
             processed.body_html.as_str(),
             Some(note.path.as_path()),
             &note_ids,
+            &processed_notes,
             &build_config.site,
             &templates,
         )?;
@@ -553,6 +554,7 @@ fn render_links_in_body(
     body_html: &str,
     note_path: Option<&Path>,
     note_ids: &HashSet<String>,
+    processed_notes: &HashMap<String, ProcessedNote>,
     site: &SiteSettings,
     templates: &Tera,
 ) -> StrResult<(String, Vec<String>, Vec<String>)> {
@@ -562,6 +564,7 @@ fn render_links_in_body(
     let context = RenderContext {
         mode: RenderMode::Links {
             note_ids,
+            processed_notes,
             site,
             templates,
             citations: Some(&citations),
@@ -721,6 +724,7 @@ fn compute_transcluded_descendants(
     descendants
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_backmatter_html(
     note_id: &str,
     backlinks: &HashMap<String, Vec<String>>,
@@ -872,6 +876,7 @@ enum RenderMode<'a> {
     },
     Links {
         note_ids: &'a HashSet<String>,
+        processed_notes: &'a HashMap<String, ProcessedNote>,
         site: &'a SiteSettings,
         templates: &'a Tera,
         citations: Option<&'a RefCell<HashSet<String>>>,
@@ -956,6 +961,7 @@ fn render_element(
         }
         RenderMode::Links {
             note_ids,
+            processed_notes,
             site,
             templates,
             citations,
@@ -985,7 +991,14 @@ fn render_element(
                 {
                     related.borrow_mut().insert(target.clone());
                 }
-                let content = render_children(node, context)?;
+                let mut content = render_children(node, context)?;
+                if content.is_empty()
+                    && let Some(title) = processed_notes
+                        .get(&target)
+                        .and_then(|note| note.title.as_deref())
+                {
+                    content = escape_text(title);
+                }
                 if tag.eq_ignore_ascii_case("wb-cite") {
                     return render_citation(templates, site, &target, &content);
                 }
