@@ -3,6 +3,10 @@
 #let sans-fonts = ("Inter", "IBM Plex Sans", "IBM Plex Sans SC")
 #let serif-fonts = ("Libertinus Serif", "IBM Plex Serif")
 
+#let metadata-taxon-map-paged = (
+  :
+)
+
 #let _default-metadata(identifier, ..attrs) = {
   let author = attrs.at("author", default: none)
   let date = attrs.at("date", default: none)
@@ -18,7 +22,7 @@
 #let _metadata(identifier, ..attrs) = {
   let taxon = attrs.at("taxon", default: none)
   if taxon != none {
-    let f = site.paged-metadata-taxon-map.at(taxon, default: _default-metadata)
+    let f = metadata-taxon-map-paged.at(taxon, default: _default-metadata)
     f(identifier, ..attrs)
   } else {
     _default-metadata(identifier, ..attrs)

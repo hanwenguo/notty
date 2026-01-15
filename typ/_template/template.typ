@@ -71,6 +71,55 @@
   )
 }
 
+#let _meta-item(body) = {
+  html.li(class: "meta-item", body)
+}
+
+#let _guard-and-render-metadata(
+  name,
+  renderer
+) = (attrs) => {
+  if attrs.at(name, default: none) != none {
+    _meta-item(renderer(attrs.at(name)))
+  }
+}
+
+#let default-metadata = (attrs) => {
+  _guard-and-render-metadata("date", (it) => {
+    it.display("[month repr:long] [day], [year]")
+  })(attrs)
+  _guard-and-render-metadata("author", (it) => {
+    html.address(class: "author", {
+      it.map((a) => {
+        if type(a) == str {
+          ln-html("wb:" + a)[]
+        } else {
+          a
+        }
+      }).join(", ")
+    })
+  })(attrs)
+}
+
+#let metadata-taxon-map-html = (
+  "Person": (attrs) => {
+    _guard-and-render-metadata("position", (it) => {
+      it
+    })(attrs)
+    _guard-and-render-metadata("affiliation", (it) => {
+      it
+    })(attrs)
+    _guard-and-render-metadata("homepage", (it) => {
+      html.a(class: "link external", href: it)[#it]
+    })(attrs)
+    _guard-and-render-metadata("orcid", (it) => {
+      html.a(
+        class: "orcid",
+        href: "https://orcid.org/" + it
+      )[#it]
+    })(attrs)
+  },
+)
 
 #let _summary_header(
   level: 1,
@@ -97,24 +146,12 @@
         }
       })
       html.div(class: "metadata", {
-        html.ul({
-          if attrs.at("date", default: none) != none {
-            html.li(class: "meta-item", {
-              attrs.at("date").display("[month repr:long] [day], [year]")
-            })
-          }
-          if attrs.at("author", default: none) != none {
-            html.li(class: "meta-item", html.address(class: "author", {
-              attrs.at("author").map((a) => {
-                if type(a) == str {
-                  ln-html("wb:" + a)[]
-                } else {
-                  a
-                }
-              }).join(", ")
-            }))
-          }
-        })
+        html.ul(
+          metadata-taxon-map-html.at(
+            attrs.at("taxon", default: ""),
+            default: default-metadata
+          )(attrs)
+        )
       })
     })
   )
