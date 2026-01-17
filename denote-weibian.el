@@ -31,7 +31,7 @@
 (require 'denote)
 
 (defvar denote-weibian-front-matter
-  "#import \"/_template/template.typ\": template, tr, ln
+  "#import \"/_template/template.typ\": template, tr, ln, ct, inline-tree
 #show: template(
   title:      %s,
   date:       %s,
@@ -48,8 +48,8 @@
 (defun denote-weibian--trim-trailing-comma (s)
   "Trim trailing comma from string S."
   (if (string-suffix-p "," s)
-   (substring s 0 -1)
-  s))
+      (substring s 0 -1)
+    s))
 
 (defun denote-weibian--trim-brackets (s)
   "Trim brackets around string S."
@@ -94,9 +94,9 @@ Consult the `denote-file-types' for how this is used."
 (defun denote-weibian-format-date (date)
   "Format DATE as Typst datetime."
   (if date
-     (format-time-string
-      "datetime(year: %Y, month: %m, day: %d, hour: %H, minute: %M, second: %S)"
-      date)
+      (format-time-string
+       "datetime(year: %Y, month: %m, day: %d, hour: %H, minute: %M, second: %S)"
+       date)
     ""))
 
 (defmacro denote-weibian--define-retrieve-date (field)
@@ -138,8 +138,8 @@ Consult the `denote-file-types' for how this is used."
 Consult the `denote-file-types' for how this is used."
   (let ((date-string (denote-weibian-trim-whitespace-then-comma-then-quotes date-string)))
     (if (string-empty-p date-string)
-      nil
-     (denote-weibian--extract-date-from-front-matter date-string))))
+        nil
+      (denote-weibian--extract-date-from-front-matter date-string))))
 
 (defvar denote-weibian-link-format "#ln(\"wb:%s\")[%s]")
 (defvar denote-weibian-link-in-context-regexp
