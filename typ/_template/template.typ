@@ -174,6 +174,11 @@
     if attrs.at("taxon", default: none) != none {
       html.meta(name: "taxon", content: attrs.at("taxon"))
     }
+    if attrs.at("toc", default: none) != none {
+      html.meta(name: "toc", content: if attrs.at("toc") { "true" } else { "false" })
+    } else {
+      html.meta(name: "toc", content: "true")
+    }
     html.title(plain-text(title))
   })
 }

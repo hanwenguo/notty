@@ -36,51 +36,53 @@
       </article>
       {% set heading_count = note.toc.0.children | length %}
       {% if heading_count != 0 %}
-      <nav id="toc">
-        <div class="block">
-          <h1>Table of Contents</h1>
-          {% for h1 in note.toc %}
-          <ul class="block">
-            {% for h2 in h1.children %}
-            <li>
-              <a href="{{site.root_dir}}{{ h2.id }}/" class="bullet">■</a>
-              <a href="#{{ h2.id }}" class="link local {%- if h2.disable_numbering %} disable-numbering{%- endif -%}">{{ h2.content | safe }}</a>
-              {% if h2.children | length > 0 %}
-              <ul class="block">
-                {% for h3 in h2.children %}
-                <li>
-                  <a href="{{site.root_dir}}{{ h3.id }}/" class="bullet">■</a>
-                  <a href="#{{ h3.id }}" class="link local {%- if h3.disable_numbering %} disable-numbering{%- endif -%}">{{ h3.content | safe }}</a>
-                  {% if h3.children | length > 0 %}
-                  <ul class="block">
-                    {% for h4 in h3.children %}
-                    <li>
-                      <a href="{{site.root_dir}}{{ h4.id }}/" class="bullet">■</a>
-                      <a href="#{{ h4.id }}" class="link local {%- if h4.disable_numbering %} disable-numbering{%- endif -%}">{{ h4.content | safe }}</a>
-                      {% if h4.children | length > 0 %}
-                      <ul class="block">
-                        {% for h5 in h4.children %}
-                        <li>
-                          <a href="{{site.root_dir}}{{ h5.id }}/" class="bullet">■</a>
-                          <a href="#{{ h5.id }}" class="link local {%- if h5.disable_numbering %} disable-numbering{%- endif -%}">{{ h5.content | safe }}</a>
-                        </li>
-                        {% endfor %}
-                      </ul>
-                      {% endif %}
-                    </li>
-                    {% endfor %}
-                  </ul>
-                  {% endif %}
-                </li>
-                {% endfor %}
-              </ul>
-              {% endif %}
-            </li>
+        {% if note.metadata.toc != "false" %}
+        <nav id="toc">
+          <div class="block">
+            <h1>Table of Contents</h1>
+            {% for h1 in note.toc %}
+            <ul class="block">
+              {% for h2 in h1.children %}
+              <li>
+                <a href="{{site.root_dir}}{{ h2.id }}/" class="bullet">■</a>
+                <a href="#{{ h2.id }}" class="link local {%- if h2.disable_numbering %} disable-numbering{%- endif -%}">{{ h2.content | safe }}</a>
+                {% if h2.children | length > 0 %}
+                <ul class="block">
+                  {% for h3 in h2.children %}
+                  <li>
+                    <a href="{{site.root_dir}}{{ h3.id }}/" class="bullet">■</a>
+                    <a href="#{{ h3.id }}" class="link local {%- if h3.disable_numbering %} disable-numbering{%- endif -%}">{{ h3.content | safe }}</a>
+                    {% if h3.children | length > 0 %}
+                    <ul class="block">
+                      {% for h4 in h3.children %}
+                      <li>
+                        <a href="{{site.root_dir}}{{ h4.id }}/" class="bullet">■</a>
+                        <a href="#{{ h4.id }}" class="link local {%- if h4.disable_numbering %} disable-numbering{%- endif -%}">{{ h4.content | safe }}</a>
+                        {% if h4.children | length > 0 %}
+                        <ul class="block">
+                          {% for h5 in h4.children %}
+                          <li>
+                            <a href="{{site.root_dir}}{{ h5.id }}/" class="bullet">■</a>
+                            <a href="#{{ h5.id }}" class="link local {%- if h5.disable_numbering %} disable-numbering{%- endif -%}">{{ h5.content | safe }}</a>
+                          </li>
+                          {% endfor %}
+                        </ul>
+                        {% endif %}
+                      </li>
+                      {% endfor %}
+                    </ul>
+                    {% endif %}
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
             {% endfor %}
-          </ul>
-          {% endfor %}
-        </div>
-      </nav>
+          </div>
+        </nav>
+        {% endif %}
       {% endif %}
     </div>
   </body>
