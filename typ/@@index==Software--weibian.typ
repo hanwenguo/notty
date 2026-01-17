@@ -12,8 +12,8 @@ Weibian is a software for taking scientific notes in the spirit of #link("https:
 
 Just as leather straps bind scattered bamboo slips into a scroll, this project aims to weave your notes into a structured, cohesive knowledge base. The name is also a tribute to the spirit of learning and researching. According to《史记》 (_Shiji_, or the _Records of the Grand Historian_), Confucius studied《易经》(_Yijing_, or _I Ching_, or the _Book of Changes_) with such intensity that the leather bindings of his bamboo book wore out and snapped multiple times. The source text reads: “读《易》，韦编三绝” (“\[Confucius\] read the _Yijing_ \[so frequently that\] the leather bindings broke multiple times”). By naming this project Weibian, I honor both the structure of knowledge (the binding) and the persistence required to master it.]
 
-#tr("wb:20250817T222638")
+#tr("wb:0000")
 
-#tr("wb:20250819T221255")
+#tr("wb:0007")
 
-#tr("wb:20250819T221329")
+#tr("wb:0008")

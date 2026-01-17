@@ -4,7 +4,7 @@
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 12, second: 55),
   tags:       (),
   author: ("hanwenguo",),
-  identifier: "20250819T221255",
+  identifier: "0007",
 )
 
 Weibian is implemented in Rust. To set up Weibian on your local machine, you can either install using `cargo`:

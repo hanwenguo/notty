@@ -4,7 +4,7 @@
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 29),
   tags:       (),
   author: ("hanwenguo",),
-  identifier: "20250819T221329",
+  identifier: "0008",
 )
 
 Weibian works by exporting your notes written in Typst format to HTML using the HTML export feature of Typst, then post-processing the exported HTML files to create a website. Therefore, writing notes in Weibian is essentially writing Typst documents with some conventions. For a demonstration of these conventions, see the #link("https://github.com/hanwenguo/weibian")[repository of Weibian] itself.
@@ -84,4 +84,4 @@ The configuration file is parsed at the start of the program, and values are use
 The `trailing_slash` option will affect how internal links are generated and how the output files are organized. If `trailing_slash` is true, each note will be saved in a subdirectory named after its ID, with an `index.html` file inside (e.g., a note with ID `note-123` will be saved as `dist/note-123/index.html`). If false, each note will be saved directly as an HTML file named after its ID (e.g., `dist/note-123.html`). The `root_dir` setting only affects link generation; it does not change where files are written. Special case: a note with ID `index` is always saved as `dist/index.html` and links to the site root.
 ]
 
-#tr("wb:20250819T221344", expanded: false)
+#tr("wb:0009", expanded: false)
