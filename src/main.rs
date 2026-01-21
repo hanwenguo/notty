@@ -3,6 +3,7 @@ mod backend;
 mod config;
 mod error;
 mod frontend;
+mod html;
 mod terminal;
 // mod backend;
 mod compile;

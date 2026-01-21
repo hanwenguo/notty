@@ -1,10 +1,11 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::error::StrResult;
 use ecow::eco_format;
+use scraper::Html;
 
 use crate::config::BuildConfig;
 
@@ -19,27 +20,7 @@ pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
         )
     })?;
 
-    let entries = fs::read_dir(input_dir).map_err(|err| {
-        eco_format!(
-            "failed to read input directory {}: {err}",
-            input_dir.display()
-        )
-    })?;
-
-    let mut sources = Vec::new();
-    for entry in entries {
-        let entry =
-            entry.map_err(|err| eco_format!("failed to read input directory entry: {err}"))?;
-        let path = entry.path();
-        if path.extension().and_then(|ext| ext.to_str()) != Some("typ") {
-            continue;
-        }
-        let relative = path.strip_prefix(input_dir).unwrap_or(&path);
-        if !build_config.input_filters.allows(relative) {
-            continue;
-        }
-        sources.push(path);
-    }
+    let sources = collect_typst_sources(build_config)?;
 
     if sources.is_empty() {
         if build_config.input_filters.has_filters() {
@@ -54,13 +35,77 @@ pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
         ));
     }
 
+    let mut note_ids = Vec::with_capacity(sources.len());
+    let mut note_sources: HashMap<String, PathBuf> = HashMap::new();
+
     for source in &sources {
-        compile_typst_file(build_config, source, output_dir)?;
+        let html = compile_typst_file(build_config, source)?;
+        let note_id = extract_note_id_from_html(&html, source)?;
+        if let Some(previous) = note_sources.get(&note_id) {
+            return Err(eco_format!(
+                "duplicate note id {note_id} found while compiling {} (already used by {})",
+                source.display(),
+                previous.display()
+            ));
+        }
+        note_sources.insert(note_id.clone(), source.clone());
+        note_ids.push(note_id.clone());
+
+        let output_path = output_dir.join(format!("{note_id}.html"));
+        fs::write(&output_path, html).map_err(|err| {
+            eco_format!(
+                "failed to write html cache file {}: {err}",
+                output_path.display()
+            )
+        })?;
     }
 
-    clean_html_cache(output_dir, &sources)?;
+    clean_html_cache(output_dir, &note_ids)?;
 
     Ok(output_dir.clone())
+}
+
+fn collect_typst_sources(build_config: &BuildConfig) -> StrResult<Vec<PathBuf>> {
+    let input_dir = &build_config.input_directory;
+    let mut sources = Vec::new();
+    let mut stack = vec![input_dir.clone()];
+
+    while let Some(dir) = stack.pop() {
+        let entries = fs::read_dir(&dir).map_err(|err| {
+            eco_format!("failed to read input directory {}: {err}", dir.display())
+        })?;
+
+        for entry in entries {
+            let entry =
+                entry.map_err(|err| eco_format!("failed to read input directory entry: {err}"))?;
+            let path = entry.path();
+            let file_type = entry.file_type().map_err(|err| {
+                eco_format!("failed to read file type for {}: {err}", path.display())
+            })?;
+
+            if file_type.is_dir() {
+                stack.push(path);
+                continue;
+            }
+
+            if !file_type.is_file() {
+                continue;
+            }
+
+            if path.extension().and_then(|ext| ext.to_str()) != Some("typ") {
+                continue;
+            }
+
+            let relative = path.strip_prefix(input_dir).unwrap_or(&path);
+            if !build_config.input_filters.allows(relative) {
+                continue;
+            }
+
+            sources.push(path);
+        }
+    }
+
+    Ok(sources)
 }
 
 fn generate_inputs_from_build_config(build_config: &BuildConfig) -> Vec<String> {
@@ -69,10 +114,7 @@ fn generate_inputs_from_build_config(build_config: &BuildConfig) -> Vec<String> 
         "wb-domain={}",
         build_config.site.domain.as_deref().unwrap_or("")
     ));
-    inputs.push(format!(
-        "wb-root-dir={}",
-        build_config.site.root_dir
-    ));
+    inputs.push(format!("wb-root-dir={}", build_config.site.root_dir));
     inputs.push(format!(
         "wb-trailing-slash={}",
         if build_config.site.trailing_slash {
@@ -85,13 +127,7 @@ fn generate_inputs_from_build_config(build_config: &BuildConfig) -> Vec<String> 
     inputs
 }
 
-fn compile_typst_file(
-    build_config: &BuildConfig,
-    source: &Path,
-    output_dir: &Path,
-) -> StrResult<()> {
-    let output_path = html_output_path(source, output_dir)?;
-
+fn compile_typst_file(build_config: &BuildConfig, source: &Path) -> StrResult<String> {
     let root = build_config
         .world
         .root
@@ -135,7 +171,7 @@ fn compile_typst_file(
         cmd.arg("--input").arg(input);
     }
 
-    cmd.arg(source).arg(&output_path);
+    cmd.arg(source).arg("-");
 
     let output = cmd
         .output()
@@ -149,24 +185,23 @@ fn compile_typst_file(
         ));
     }
 
-    Ok(())
+    String::from_utf8(output.stdout).map_err(|err| {
+        eco_format!(
+            "typst output for {} is not valid UTF-8: {err}",
+            source.display()
+        )
+    })
 }
 
-fn html_output_path(source: &Path, output_dir: &Path) -> StrResult<PathBuf> {
-    let file_stem = source
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .ok_or_else(|| eco_format!("invalid input filename {}", source.display()))?;
-    Ok(output_dir.join(format!("{file_stem}.html")))
+fn extract_note_id_from_html(html: &str, source: &Path) -> StrResult<String> {
+    let document = Html::parse_document(html);
+    crate::html::extract_note_id(&document, source)
 }
 
-fn clean_html_cache(output_dir: &Path, sources: &[PathBuf]) -> StrResult<()> {
+fn clean_html_cache(output_dir: &Path, note_ids: &[String]) -> StrResult<()> {
     let mut expected = HashSet::new();
-    for source in sources {
-        let output_path = html_output_path(source, output_dir)?;
-        if let Some(name) = output_path.file_name().and_then(|name| name.to_str()) {
-            expected.insert(name.to_string());
-        }
+    for note_id in note_ids {
+        expected.insert(format!("{note_id}.html"));
     }
 
     let entries = fs::read_dir(output_dir).map_err(|err| {

@@ -340,7 +340,7 @@ fn load_notes(html_dir: &Path) -> StrResult<HashMap<String, Note>> {
         let html = fs::read_to_string(&path)
             .map_err(|err| eco_format!("failed to read {}: {err}", path.display()))?;
         let document = Html::parse_document(&html);
-        let id = extract_note_id(&document, &path)?;
+        let id = crate::html::extract_note_id(&document, &path)?;
 
         if notes.contains_key(&id) {
             return Err(eco_format!(
@@ -372,33 +372,6 @@ fn load_notes(html_dir: &Path) -> StrResult<HashMap<String, Note>> {
     }
 
     Ok(notes)
-}
-
-fn extract_note_id(document: &Html, path: &Path) -> StrResult<String> {
-    let selector = Selector::parse("head meta")
-        .map_err(|err| eco_format!("failed to parse selector head meta: {err}"))?;
-
-    for element in document.select(&selector) {
-        let name = element
-            .value()
-            .attr("name")
-            .or_else(|| element.value().attr("property"))
-            .or_else(|| element.value().attr("itemprop"));
-        let Some(name) = name else {
-            continue;
-        };
-        let name = name.to_ascii_lowercase();
-        if (name == "id" || name == "identifier" || name == "wb-id")
-            && let Some(content) = element.value().attr("content")
-        {
-            return Ok(content.to_string());
-        }
-    }
-
-    Err(eco_format!(
-        "missing identifier meta tag in {}",
-        path.display()
-    ))
 }
 
 fn extract_metadata(note: &Note) -> StrResult<HashMap<String, String>> {
