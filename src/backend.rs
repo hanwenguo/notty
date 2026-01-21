@@ -6,13 +6,13 @@ use std::path::{Path, PathBuf};
 use crate::error::StrResult;
 use ecow::eco_format;
 use ego_tree::{NodeId, NodeRef};
-use html5ever::{LocalName, Namespace, QualName};
+use html5ever::LocalName;
 use scraper::{Html, Node, Selector};
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera, Value as TeraValue};
 
 use crate::config::{BuildConfig, SiteSettings};
-use crate::html::HtmlNote;
+use crate::html::{HtmlNote, add_class_to_element};
 
 struct Note {
     id: String,
@@ -972,31 +972,6 @@ fn render_fragment(root: NodeRef<Node>) -> StrResult<String> {
     render_children(root, &context)
 }
 
-#[allow(dead_code)]
-fn find_first_element(root: NodeRef<Node>) -> Option<NodeId> {
-    for node in root.descendants() {
-        if let Some(element) = node.value().as_element() {
-            let name = element.name();
-            if !name.eq_ignore_ascii_case("html") && !name.eq_ignore_ascii_case("body") {
-                return Some(node.id());
-            }
-        }
-    }
-    None
-}
-
-#[allow(dead_code)]
-fn find_first_element_by_tag(root: NodeRef<Node>, tag: &str) -> Option<NodeId> {
-    for node in root.descendants() {
-        if let Some(element) = node.value().as_element()
-            && element.name().eq_ignore_ascii_case(tag)
-        {
-            return Some(node.id());
-        }
-    }
-    None
-}
-
 fn with_element_mut<F>(fragment: &mut Html, node_id: NodeId, f: F)
 where
     F: FnOnce(&mut scraper::node::Element),
@@ -1005,36 +980,6 @@ where
         && let Node::Element(element) = node.value()
     {
         f(element);
-    }
-}
-
-#[allow(dead_code)]
-fn set_attr(element: &mut scraper::node::Element, name: &str, value: &str) {
-    let existing_key = element
-        .attrs
-        .keys()
-        .find(|key| key.local.as_ref() == name)
-        .cloned();
-    let key = existing_key
-        .unwrap_or_else(|| QualName::new(None, Namespace::from(""), LocalName::from(name)));
-    element.attrs.insert(key, value.to_string().into());
-}
-
-#[allow(dead_code)]
-fn remove_attr(element: &mut scraper::node::Element, name: &str) {
-    element.attrs.retain(|key, _| key.local.as_ref() != name);
-}
-
-#[allow(dead_code)]
-fn add_class_to_element(element: &mut scraper::node::Element, class: &str) {
-    let mut class_value = element
-        .attrs
-        .iter()
-        .find(|(key, _)| key.local.as_ref() == "class")
-        .map(|(_, value)| value.to_string());
-    add_class(&mut class_value, class);
-    if let Some(value) = class_value {
-        set_attr(element, "class", &value);
     }
 }
 
@@ -1121,7 +1066,6 @@ fn heading_level(tag: &str) -> Option<u8> {
     }
 }
 
-#[allow(dead_code)]
 fn is_heading_tag(tag: &str) -> bool {
     matches!(
         tag.to_ascii_lowercase().as_str(),
@@ -1149,21 +1093,6 @@ fn output_path_for_note(output_dir: &Path, note_id: &str, site: &SiteSettings) -
     } else {
         output_dir.join(format!("{note_id}.html"))
     }
-}
-
-#[allow(dead_code)]
-fn has_class(value: &str, class: &str) -> bool {
-    value.split_whitespace().any(|item| item == class)
-}
-
-#[allow(dead_code)]
-fn add_class(class_value: &mut Option<String>, class: &str) {
-    let updated = match class_value.take() {
-        Some(existing) if has_class(&existing, class) => existing,
-        Some(existing) => format!("{existing} {class}"),
-        None => class.to_string(),
-    };
-    *class_value = Some(updated);
 }
 
 fn is_void_element(tag: &str) -> bool {

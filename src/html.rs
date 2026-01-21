@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use ecow::eco_format;
-use scraper::{Html, Selector};
+use ego_tree::{NodeId, NodeRef};
+use html5ever::{LocalName, Namespace, QualName};
+use scraper::{Html, Node, Selector};
 
 use crate::error::StrResult;
 
@@ -118,4 +120,66 @@ pub fn normalize_target(raw: &str) -> String {
     let trimmed = raw.trim();
     let normalized = trimmed.strip_prefix("wb:").unwrap_or(trimmed).trim();
     normalized.to_string()
+}
+
+#[allow(dead_code)]
+pub fn find_first_element(root: NodeRef<Node>) -> Option<NodeId> {
+    for node in root.descendants() {
+        if let Some(element) = node.value().as_element() {
+            let name = element.name();
+            if !name.eq_ignore_ascii_case("html") && !name.eq_ignore_ascii_case("body") {
+                return Some(node.id());
+            }
+        }
+    }
+    None
+}
+
+#[allow(dead_code)]
+pub fn find_first_element_by_tag(root: NodeRef<Node>, tag: &str) -> Option<NodeId> {
+    for node in root.descendants() {
+        if let Some(element) = node.value().as_element()
+            && element.name().eq_ignore_ascii_case(tag)
+        {
+            return Some(node.id());
+        }
+    }
+    None
+}
+
+pub fn set_attr(element: &mut scraper::node::Element, name: &str, value: &str) {
+    let existing_key = element
+        .attrs
+        .keys()
+        .find(|key| key.local.as_ref() == name)
+        .cloned();
+    let key = existing_key
+        .unwrap_or_else(|| QualName::new(None, Namespace::from(""), LocalName::from(name)));
+    element.attrs.insert(key, value.to_string().into());
+}
+
+pub fn add_class_to_element(element: &mut scraper::node::Element, class: &str) {
+    let mut class_value = element
+        .attrs
+        .iter()
+        .find(|(key, _)| key.local.as_ref() == "class")
+        .map(|(_, value)| value.to_string());
+    add_class(&mut class_value, class);
+    if let Some(value) = class_value {
+        set_attr(element, "class", &value);
+    }
+}
+
+
+pub fn has_class(value: &str, class: &str) -> bool {
+    value.split_whitespace().any(|item| item == class)
+}
+
+pub fn add_class(class_value: &mut Option<String>, class: &str) {
+    let updated = match class_value.take() {
+        Some(existing) if has_class(&existing, class) => existing,
+        Some(existing) => format!("{existing} {class}"),
+        None => class.to_string(),
+    };
+    *class_value = Some(updated);
 }

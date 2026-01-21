@@ -42,7 +42,6 @@ pub struct SiteConfig {
 
 #[derive(Debug, Clone)]
 pub struct SiteSettings {
-    #[allow(dead_code)]
     pub domain: Option<String>,
     pub root_dir: String,
     pub trailing_slash: bool,
