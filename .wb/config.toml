@@ -2,7 +2,6 @@
 input_dir = "typ"
 output_dir = "dist"
 public_dir = "public"
-# cache_dir = ".wb/cache" # optional; defaults to a project-specific temp dir if omitted
 include = ["**/*.typ"]  # optional; defaults to all files in input_dir
 exclude = ["_template/*.typ"]   # optional; exclude has priority over include
 # the above is the equivalent of the corresponding CLI flags

@@ -12,8 +12,8 @@ use crate::{backend, frontend};
 pub fn compile(command: &CompileCommand, config: &WeibianConfig) -> StrResult<()> {
     let build_config = BuildConfig::from(&command.args, config)?;
 
-    let html_dir = frontend::compile_html(&build_config)?;
-    backend::process_html(&build_config, &html_dir)?;
+    let html_notes = frontend::compile_html(&build_config)?;
+    backend::process_html(&build_config, html_notes)?;
 
     // let mut world = SystemWorld::new(
     //     &command.args.input,

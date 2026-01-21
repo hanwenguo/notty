@@ -12,6 +12,7 @@ use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera, Value as TeraValue};
 
 use crate::config::{BuildConfig, SiteSettings};
+use crate::html::HtmlNote;
 
 struct Note {
     id: String,
@@ -107,12 +108,12 @@ struct SiteTemplateContext<'a> {
     domain: Option<&'a str>,
 }
 
-pub fn process_html(build_config: &BuildConfig, html_dir: &Path) -> StrResult<()> {
+pub fn process_html(build_config: &BuildConfig, html_notes: Vec<HtmlNote>) -> StrResult<()> {
     let public_dir = &build_config.public_directory;
     let output_dir = &build_config.output_directory;
     let templates = load_templates()?;
 
-    let notes = load_notes(html_dir)?;
+    let notes = load_notes(html_notes)?;
     let order = topo_sort_transclusions(&notes)?;
 
     let note_ids: HashSet<String> = notes.keys().cloned().collect();
@@ -233,8 +234,8 @@ fn process_note(
 ) -> StrResult<ProcessedNote> {
     let body_html = render_note_body(note, processed_notes, site, templates)?;
     let head_html = render_note_head(note)?;
-    let metadata = extract_metadata(note)?;
-    let title = extract_note_title(note, &metadata)?;
+    let metadata = crate::html::extract_metadata(&note.document)?;
+    let title = crate::html::extract_note_title(&note.document, &metadata)?;
     Ok(ProcessedNote {
         head_html,
         body_html,
@@ -320,44 +321,29 @@ fn prepare_transclusion_content(body_html: &str) -> StrResult<String> {
     Ok(body_html.to_string())
 }
 
-fn load_notes(html_dir: &Path) -> StrResult<HashMap<String, Note>> {
+fn load_notes(html_notes: Vec<HtmlNote>) -> StrResult<HashMap<String, Note>> {
     let mut notes = HashMap::new();
-    let entries = fs::read_dir(html_dir).map_err(|err| {
-        eco_format!(
-            "failed to read html directory {}: {err}",
-            html_dir.display()
-        )
-    })?;
 
-    for entry in entries {
-        let entry =
-            entry.map_err(|err| eco_format!("failed to read html directory entry: {err}"))?;
-        let path = entry.path();
-        if path.extension().and_then(|ext| ext.to_str()) != Some("html") {
-            continue;
-        }
-
-        let html = fs::read_to_string(&path)
-            .map_err(|err| eco_format!("failed to read {}: {err}", path.display()))?;
-        let document = Html::parse_document(&html);
-        let id = crate::html::extract_note_id(&document, &path)?;
-
-        if notes.contains_key(&id) {
+    for note in html_notes {
+        if notes.contains_key(&note.id) {
             return Err(eco_format!(
-                "duplicate note id {id} found while reading {}",
-                path.display()
+                "duplicate note id {} found while reading {}",
+                note.id,
+                note.source_path.display()
             ));
         }
 
-        let transcludes = collect_targets(&document, "wb-transclusion", &path)?;
-        let links_out = collect_targets(&document, "wb-internal-link", &path)?;
+        let transcludes =
+            crate::html::collect_targets(&note.document, "wb-transclusion", &note.source_path)?;
+        let links_out =
+            crate::html::collect_targets(&note.document, "wb-internal-link", &note.source_path)?;
 
         notes.insert(
-            id.clone(),
+            note.id.clone(),
             Note {
-                id,
-                path,
-                document,
+                id: note.id,
+                path: note.source_path,
+                document: note.document,
                 transcludes,
                 links_out,
             },
@@ -365,69 +351,10 @@ fn load_notes(html_dir: &Path) -> StrResult<HashMap<String, Note>> {
     }
 
     if notes.is_empty() {
-        return Err(eco_format!(
-            "no html files found in directory {}",
-            html_dir.display()
-        ));
+        return Err(eco_format!("no html notes provided to backend"));
     }
 
     Ok(notes)
-}
-
-fn extract_metadata(note: &Note) -> StrResult<HashMap<String, String>> {
-    let selector = Selector::parse("head meta")
-        .map_err(|err| eco_format!("failed to parse selector head meta: {err}"))?;
-    let mut metadata = HashMap::new();
-    for element in note.document.select(&selector) {
-        let Some(name) = element.value().attr("name") else {
-            continue;
-        };
-        let Some(content) = element.value().attr("content") else {
-            continue;
-        };
-        let key = name.trim().to_ascii_lowercase();
-        if key.is_empty() {
-            continue;
-        }
-        metadata.insert(key, content.to_string());
-    }
-    Ok(metadata)
-}
-
-fn extract_note_title(
-    note: &Note,
-    metadata: &HashMap<String, String>,
-) -> StrResult<Option<String>> {
-    if let Some(title) = metadata.get("title") {
-        return Ok(Some(title.clone()));
-    }
-
-    let selector = Selector::parse("head title")
-        .map_err(|err| eco_format!("failed to parse selector head title: {err}"))?;
-    for element in note.document.select(&selector) {
-        let text = element.text().collect::<String>().trim().to_string();
-        if !text.is_empty() {
-            return Ok(Some(text));
-        }
-    }
-
-    Ok(None)
-}
-
-fn collect_targets(document: &Html, tag: &str, path: &Path) -> StrResult<Vec<String>> {
-    let selector =
-        Selector::parse(tag).map_err(|err| eco_format!("failed to parse selector {tag}: {err}"))?;
-    let mut targets = Vec::new();
-    for node in document.select(&selector) {
-        let target = node.value().attr("target").ok_or_else(|| {
-            eco_format!(
-                "{tag} missing required attribute target in {}",
-                path.display()
-            )
-        })?;
-        targets.push(normalize_target(target));
-    }
-    Ok(targets)
 }
 
 fn topo_sort_transclusions(notes: &HashMap<String, Note>) -> StrResult<Vec<String>> {
@@ -909,17 +836,20 @@ fn render_element(
                         path_display(context)
                     )
                 })?;
-                let target = normalize_target(target_raw);
+                let target = crate::html::normalize_target(target_raw);
                 let body_html = transclusion_lookup.body_html(&target).ok_or_else(|| {
                     eco_format!(
                         "transclusion target {target} referenced by {} is not processed yet",
                         path_display(context)
                     )
                 })?;
-                let show_metadata = parse_bool_attr(element.attr("show-metadata"), true);
-                let expanded = parse_bool_attr(element.attr("expanded"), true);
-                let disable_numbering = parse_bool_attr(element.attr("disable-numbering"), false);
-                let demote_headings = parse_bool_attr(element.attr("demote-headings"), true);
+                let show_metadata =
+                    crate::html::parse_bool_attr(element.attr("show-metadata"), true);
+                let expanded = crate::html::parse_bool_attr(element.attr("expanded"), true);
+                let disable_numbering =
+                    crate::html::parse_bool_attr(element.attr("disable-numbering"), false);
+                let demote_headings =
+                    crate::html::parse_bool_attr(element.attr("demote-headings"), true);
                 let content_html = prepare_transclusion_content(body_html)?;
                 let transclusion = TransclusionTemplateContext {
                     target: target.as_str(),
@@ -947,7 +877,7 @@ fn render_element(
                 let target_raw = element.attr("target").ok_or_else(|| {
                     eco_format!("{} missing target in {}", tag, path_display(context))
                 })?;
-                let target = normalize_target(target_raw);
+                let target = crate::html::normalize_target(target_raw);
                 if !note_ids.contains(&target) {
                     return Err(eco_format!(
                         "link target {target} referenced by {} does not exist",
@@ -1108,15 +1038,6 @@ fn add_class_to_element(element: &mut scraper::node::Element, class: &str) {
     }
 }
 
-fn parse_bool_attr(value: Option<&str>, default: bool) -> bool {
-    match value {
-        Some(v) if v.eq_ignore_ascii_case("true") => true,
-        Some(v) if v.eq_ignore_ascii_case("false") => false,
-        Some(_) => default,
-        None => default,
-    }
-}
-
 fn wb_disable_numbering_filter(
     value: &TeraValue,
     _args: &HashMap<String, TeraValue>,
@@ -1175,12 +1096,6 @@ fn wb_demote_headings_filter(
     let rendered =
         render_fragment(fragment.tree.root()).map_err(|err| TeraError::msg(err.to_string()))?;
     Ok(TeraValue::String(rendered))
-}
-
-fn normalize_target(raw: &str) -> String {
-    let trimmed = raw.trim();
-    let normalized = trimmed.strip_prefix("wb:").unwrap_or(trimmed).trim();
-    normalized.to_string()
 }
 
 fn demote_heading_tag(tag: &str) -> Option<&'static str> {

@@ -43,12 +43,11 @@ Using the installed binary:
 wb compile
 ```
 
-By default, Weibian reads Typst sources from `typ/`, uses a project-specific directory under the system temp directory for intermediate HTML, copies assets from `public/`, and outputs the final site to `dist/`. Override paths if needed (for example, to keep the cache in your project):
+By default, Weibian reads Typst sources from `typ/`, compiles HTML in-memory, copies assets from `public/`, and outputs the final site to `dist/`. Override paths if needed:
 
 ```bash
 wb compile \
   --input typ \
-  --cache-dir .wb/cache \
   --public-dir public \
   --output dist
 ```

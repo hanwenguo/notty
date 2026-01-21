@@ -161,14 +161,6 @@ pub struct CompileArgs {
     #[clap(value_hint = ValueHint::DirPath)]
     pub input: Option<PathBuf>,
 
-    /// Path to intermediate HTML cache directory (defaults to config or a
-    /// project-specific directory under the system temp directory).
-    #[clap(
-        long = "cache-dir",
-        value_hint = ValueHint::DirPath
-    )]
-    pub html_cache: Option<PathBuf>,
-
     /// Path to public assets directory (defaults to config or "public").
     #[clap(long = "public-dir", value_hint = ValueHint::DirPath)]
     pub public: Option<PathBuf>,

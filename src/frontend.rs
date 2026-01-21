@@ -1,24 +1,16 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::error::StrResult;
 use ecow::eco_format;
-use scraper::Html;
 
 use crate::config::BuildConfig;
+use crate::html::HtmlNote;
 
-pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
+pub fn compile_html(build_config: &BuildConfig) -> StrResult<Vec<HtmlNote>> {
     let input_dir = &build_config.input_directory;
-    let output_dir = &build_config.html_cache_directory;
-
-    fs::create_dir_all(output_dir).map_err(|err| {
-        eco_format!(
-            "failed to create html cache directory {}: {err}",
-            output_dir.display()
-        )
-    })?;
 
     let sources = collect_typst_sources(build_config)?;
 
@@ -35,34 +27,25 @@ pub fn compile_html(build_config: &BuildConfig) -> StrResult<PathBuf> {
         ));
     }
 
-    let mut note_ids = Vec::with_capacity(sources.len());
     let mut note_sources: HashMap<String, PathBuf> = HashMap::new();
+    let mut notes = Vec::with_capacity(sources.len());
 
     for source in &sources {
         let html = compile_typst_file(build_config, source)?;
-        let note_id = extract_note_id_from_html(&html, source)?;
-        if let Some(previous) = note_sources.get(&note_id) {
+        let note = crate::html::parse_note_html(&html, source)?;
+        if let Some(previous) = note_sources.get(&note.id) {
             return Err(eco_format!(
-                "duplicate note id {note_id} found while compiling {} (already used by {})",
+                "duplicate note id {} found while compiling {} (already used by {})",
+                note.id,
                 source.display(),
                 previous.display()
             ));
         }
-        note_sources.insert(note_id.clone(), source.clone());
-        note_ids.push(note_id.clone());
-
-        let output_path = output_dir.join(format!("{note_id}.html"));
-        fs::write(&output_path, html).map_err(|err| {
-            eco_format!(
-                "failed to write html cache file {}: {err}",
-                output_path.display()
-            )
-        })?;
+        note_sources.insert(note.id.clone(), source.clone());
+        notes.push(note);
     }
 
-    clean_html_cache(output_dir, &note_ids)?;
-
-    Ok(output_dir.clone())
+    Ok(notes)
 }
 
 fn collect_typst_sources(build_config: &BuildConfig) -> StrResult<Vec<PathBuf>> {
@@ -191,44 +174,4 @@ fn compile_typst_file(build_config: &BuildConfig, source: &Path) -> StrResult<St
             source.display()
         )
     })
-}
-
-fn extract_note_id_from_html(html: &str, source: &Path) -> StrResult<String> {
-    let document = Html::parse_document(html);
-    crate::html::extract_note_id(&document, source)
-}
-
-fn clean_html_cache(output_dir: &Path, note_ids: &[String]) -> StrResult<()> {
-    let mut expected = HashSet::new();
-    for note_id in note_ids {
-        expected.insert(format!("{note_id}.html"));
-    }
-
-    let entries = fs::read_dir(output_dir).map_err(|err| {
-        eco_format!(
-            "failed to read html cache directory {}: {err}",
-            output_dir.display()
-        )
-    })?;
-
-    for entry in entries {
-        let entry = entry.map_err(|err| eco_format!("failed to read html cache entry: {err}"))?;
-        let path = entry.path();
-        if path.extension().and_then(|ext| ext.to_str()) != Some("html") {
-            continue;
-        }
-        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
-            continue;
-        };
-        if !expected.contains(name) {
-            fs::remove_file(&path).map_err(|err| {
-                eco_format!(
-                    "failed to remove stale html cache file {}: {err}",
-                    path.display()
-                )
-            })?;
-        }
-    }
-
-    Ok(())
 }

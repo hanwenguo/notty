@@ -1,9 +1,26 @@
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use ecow::eco_format;
 use scraper::{Html, Selector};
 
 use crate::error::StrResult;
+
+pub struct HtmlNote {
+    pub id: String,
+    pub source_path: PathBuf,
+    pub document: Html,
+}
+
+pub fn parse_note_html(html: &str, source_path: &Path) -> StrResult<HtmlNote> {
+    let document = Html::parse_document(html);
+    let id = extract_note_id(&document, source_path)?;
+    Ok(HtmlNote {
+        id,
+        source_path: source_path.to_path_buf(),
+        document,
+    })
+}
 
 pub fn extract_note_id(document: &Html, path: &Path) -> StrResult<String> {
     let selector = Selector::parse("head meta")
@@ -30,4 +47,75 @@ pub fn extract_note_id(document: &Html, path: &Path) -> StrResult<String> {
         "missing identifier meta tag in {}",
         path.display()
     ))
+}
+
+pub fn extract_metadata(document: &Html) -> StrResult<HashMap<String, String>> {
+    let selector = Selector::parse("head meta")
+        .map_err(|err| eco_format!("failed to parse selector head meta: {err}"))?;
+    let mut metadata = HashMap::new();
+    for element in document.select(&selector) {
+        let Some(name) = element.value().attr("name") else {
+            continue;
+        };
+        let Some(content) = element.value().attr("content") else {
+            continue;
+        };
+        let key = name.trim().to_ascii_lowercase();
+        if key.is_empty() {
+            continue;
+        }
+        metadata.insert(key, content.to_string());
+    }
+    Ok(metadata)
+}
+
+pub fn extract_note_title(
+    document: &Html,
+    metadata: &HashMap<String, String>,
+) -> StrResult<Option<String>> {
+    if let Some(title) = metadata.get("title") {
+        return Ok(Some(title.clone()));
+    }
+
+    let selector = Selector::parse("head title")
+        .map_err(|err| eco_format!("failed to parse selector head title: {err}"))?;
+    for element in document.select(&selector) {
+        let text = element.text().collect::<String>().trim().to_string();
+        if !text.is_empty() {
+            return Ok(Some(text));
+        }
+    }
+
+    Ok(None)
+}
+
+pub fn collect_targets(document: &Html, tag: &str, path: &Path) -> StrResult<Vec<String>> {
+    let selector =
+        Selector::parse(tag).map_err(|err| eco_format!("failed to parse selector {tag}: {err}"))?;
+    let mut targets = Vec::new();
+    for node in document.select(&selector) {
+        let target = node.value().attr("target").ok_or_else(|| {
+            eco_format!(
+                "{tag} missing required attribute target in {}",
+                path.display()
+            )
+        })?;
+        targets.push(normalize_target(target));
+    }
+    Ok(targets)
+}
+
+pub fn parse_bool_attr(value: Option<&str>, default: bool) -> bool {
+    match value {
+        Some(v) if v.eq_ignore_ascii_case("true") => true,
+        Some(v) if v.eq_ignore_ascii_case("false") => false,
+        Some(_) => default,
+        None => default,
+    }
+}
+
+pub fn normalize_target(raw: &str) -> String {
+    let trimmed = raw.trim();
+    let normalized = trimmed.strip_prefix("wb:").unwrap_or(trimmed).trim();
+    normalized.to_string()
 }
