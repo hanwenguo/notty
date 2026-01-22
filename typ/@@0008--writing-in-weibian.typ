@@ -11,18 +11,20 @@ Weibian works by exporting your notes written in Typst format to HTML using the 
 
 #inline-tree(
   identifier: "rendering-process",
-  title: "Rendering Process"
+  title: "Rendering Process",
+  expanded: false
 )[
+This section describes the internal rendering process of Weibian. To quickly get started with writing in Weibian, you can skip this section for now and use the default templates in the `typ` directory in the repository of Weibian, which is also the template for this very site.
 
-More specifically, Weibian will first export each note in the input directory to an HTML file. This does not involve any special processing; the Typst files are compiled as-is, and user is responsible for generating HTML files with the Weibian conventions described below. The generated HTML files is not used for display directly, but rather as an intermediate representation for further processing.
+Weibian will first export each note in the input directory to HTML. This does not involve any special processing; the Typst files are compiled as-is, and user is responsible for generating HTML files with the Weibian conventions described below. The generated HTML is not used for display directly nor saved as file, but rather as an in-memory intermediate representation for further processing.
 
-In the `<body>` of the HTML file, there could be three special custom elements: `<wb-transclusion target="wb:..." show-metadata="..." expanded="..." disable-numbering="..." demote-headings="..."></wb-transclusion>`, `<wb-internal-link target="wb:...">...</wb-internal-link>` and `<wb-cite target="wb:..."></wb-cite>`. 
+In the `<body>` of the HTML, there could be three special custom elements: `<wb-transclusion target="wb:..." show-metadata="..." expanded="..." disable-numbering="..." demote-headings="..."></wb-transclusion>`, `<wb-internal-link target="wb:...">...</wb-internal-link>` and `<wb-cite target="wb:..."></wb-cite>`. 
 `<wb-transclusion>` is used to represent transcluded notes, `<wb-internal-link>` is used for internal links between notes, and `<wb-cite>` is used for citations to notes, which is basically a special kind of internal link.
 For `<wb-transclusion>`, its body must be empty; the `target` attribute, starting with `wb:`, specifies the ID (not including the `wb:` prefix) of the note to be transcluded, while `show-metadata` and `expanded` are boolean attributes that control the display of metadata and whether the transclusion is expanded by default, respectively; due to limitations in Typst's HTML export capabilities, their values are represented as strings ("true" or "false"). For `<wb-internal-link>`, the `target` attribute specifies the ID of the note to link to, and its body contains the link text. For `<wb-cite>`, the `target` attribute specifies the ID of the note to cite, and its body contains the citation text.
 
-Then, Weibian extracts information from the generated HTML files, and use the Tera templating engine and user-supplied templates to produce the final HTML files for the notes. By default, Weibian looks for templates in `.wb/templates/`. 
+Then, Weibian extracts information from the generated HTML, and use the Tera templating engine and user-supplied templates to produce the final HTML files for the notes. By default, Weibian looks for templates in `.wb/templates/`. 
 
-This rendering process begins by parsing the HTML files to build a transclusion graph with respect to the `<wb-transclusion>` elements. Then, the notes are processed in topological order. For each note, the aforementioned custom elements are replaced with the actual content they represent.
+This rendering process begins by parsing the intermediate HTMLs to build a transclusion graph with respect to the `<wb-transclusion>` elements. Then, the notes are processed in topological order. For each note, the aforementioned custom elements are replaced with the actual content they represent.
 
 First, the transclusion and linking relationships are analyzed to build a transclusion graph. Each note is represented as a node in the graph, and a directed edge from node A to node B exists if note A transcludes note B. If there are cycles in the transclusion graph, Weibian will report an error and abort the rendering process, as cyclic transclusions are not supported.
 
@@ -37,7 +39,7 @@ Then, backmatters are generated for each note. As for now, Weibian supports four
 - A related note to note A to note B exists if note A links to note B via an internal link.
 The content of each backmatter section is produced by transcluding a virtual note that in turn transcludes all notes relevant to that backmatter section with options `show-metadata="true"`, `expanded="false"`, `disable-numbering="true"`, and `demote-headings="true"`; these virtual notes do not exist as actual files, but are constructed on-the-fly during backend processing, and this wouldn't affect the transclusion graph. Then, each backmatter section is rendered via the `backmatter_section.html` template, which is provided with a `backmatter_section` context (`backmatter_section.title`, `backmatter_section.content`). The `backmatter_section.title` is the title of the backmatter section (e.g., "Backlinks", "Contexts"), while `backmatter_section.content` is the raw HTML of the body of the virtual note described above.
 
-Finally, the final HTML file for each note will be constructed. The template for that is `note.html`. It receives a `note` context (`note.id`, `note.title`, `note.metadata`, `note.head`, `note.content`, `note.toc`, `note.backmatter`). `note.id` and `note.title` are extracted from the corresponding `<meta>` tags, provided for convenience.  The `note.metadata` is a map of metadata key-value pairs extracted from `<meta>` tags with `name` and `content` attributes in the `<head>` section of the intermediate HTML file. The `note.head` is the raw HTML content of the `<head>` section of the intermediate HTML file. `note.content` is the processed content of the `<body>` section of the intermediate HTML file, with all transclusions and internal links resolved as described above. `note.backmatter` is the raw HTML content of the backmatter sections generated also as described above. The `toc` field is an array of `Heading` objects, where each `Heading` object has the following structure:
+Finally, the final HTML file for each note will be constructed. The template for that is `note.html`. It receives a `note` context (`note.id`, `note.title`, `note.metadata`, `note.head`, `note.content`, `note.toc`, `note.backmatter`). `note.id` and `note.title` are extracted from the corresponding `<meta>` tags, provided for convenience.  The `note.metadata` is a map of metadata key-value pairs extracted from `<meta>` tags with `name` and `content` attributes in the `<head>` section of the intermediate HTML. The `note.head` is the raw HTML content of the `<head>` section of the intermediate HTML. `note.content` is the processed content of the `<body>` section of the intermediate HTML, with all transclusions and internal links resolved as described above. `note.backmatter` is the raw HTML content of the backmatter sections generated also as described above. The `toc` field is an array of `Heading` objects, where each `Heading` object has the following structure:
 
 ```
 // The hX level
@@ -68,7 +70,6 @@ The following is an example configuration file:
 input_dir = "typ"
 output_dir = "dist"
 public_dir = "public"
-# cache_dir = ".wb/cache" # optional; defaults to a project-specific temp dir if omitted
 # include = ["**/*.typ"]  # optional; defaults to all files in input_dir
 # exclude = ["draft-*"]   # optional; exclude has priority over include
 # the above is the equivalent of the corresponding CLI flags

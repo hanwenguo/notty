@@ -31,5 +31,3 @@ notes/
 ```
 
 Most of the above directories is the default configuration, which can be overridden by passing command line arguments when running Weibian. The `.wb` directory is necessary for now, since it keeps the HTML template files and configuration file (if any). You must create the `.wb` directory manually for now; in the future, Weibian may provide a command to initialize a project structure automatically.
-
-By default, intermediate HTML is cached in a project-specific directory under the system temporary directory. If you prefer a project-local cache, set `cache_dir = ".wb/cache"` in `.wb/config.toml` or pass `--cache-dir .wb/cache`, and create the `.wb/cache/` directory if needed.
