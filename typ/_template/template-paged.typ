@@ -1,5 +1,8 @@
 #import "site.typ"
 
+#let id-names-map = json("/id-filename.json")
+#let authors-map = json("/id-author.json")
+
 #let sans-fonts = ("Inter", "IBM Plex Sans", "IBM Plex Sans SC")
 #let serif-fonts = ("Libertinus Serif", "IBM Plex Serif")
 
@@ -11,8 +14,16 @@
   let author = attrs.at("author", default: none)
   let date = attrs.at("date", default: none)
   [#block(width: 100%, [
-    #set text(font: sans-fonts, size: 11pt)
-    #if author != none { author }
+    #set text(font: serif-fonts, size: 11pt)
+    #if author != none {
+      author.map((a) => {
+        if type(a) == str {
+          authors-map.at(a, default: a)
+        } else {
+          a
+        }
+      }).join(", ")
+    }
     #if author != none and date != none { sym.dot.c }
     #if date != none { date.display("[month repr:long] [day], [year]") }
     #if author != none or date != none { v(0.5em) }
@@ -36,15 +47,28 @@
   ..attrs,
 ) = {
   let taxon = attrs.at("taxon", default: none)
-  heading(depth: 1, {
-    if taxon != none {
-      set text(style: "italic")
-      taxon + ". "
+  context heading(
+    depth: counter("transclusion-depth").get().at(0) + 1, 
+    {
+      if taxon != none {
+        set text(fill: luma(50%))
+        taxon
+      }
+      context if counter("transclusion-depth").get().at(0) != 0 {
+        counter(heading).step(level: counter("transclusion-depth").get().at(0))
+      }
+      context if counter(heading).get().at(0) != 0 and not state("disable-numbering", false).get() {
+        if taxon != none { " " } + counter(heading).display() + ". "
+      } else if taxon != none { ". " }
+      title
     }
-    title
-  })
-  _metadata(identifier, ..attrs)
-  content
+  )
+  context if state("show-metadata", true).get() {
+    _metadata(identifier, ..attrs)
+  }
+  context if state("expanded", true).get() {
+    content
+  } else [...]
 }
 
 #let wb-section = _main-part
@@ -63,7 +87,7 @@
       bottom: 1.5in,
     ),
     footer: context {
-      set text(font: sans-fonts, size: 8pt)
+      set text(font: serif-fonts, size: 8pt)
       block(width: 100% + 3.5in - 1in, {
         if counter(page).get().first() != 1 {
           linebreak()
@@ -95,7 +119,7 @@
   show heading.where(depth: 1): it => {
     let title = it.body
     {
-      set text(hyphenate: false, size: 20pt, font: sans-fonts)
+      set text(hyphenate: false, size: 20pt, font: serif-fonts)
       set par(justify: false, leading: 0.2em, first-line-indent: 0pt)
       title
     }
@@ -103,35 +127,36 @@
 
   show heading.where(depth: 2): it => {
     v(1.3em, weak: true)
-    text(size: 14pt, weight: "bold", font: sans-fonts, it)
+    text(size: 14pt, weight: "bold", font: serif-fonts, it)
     v(1em, weak: true)
   }
 
   show heading.where(depth: 3): it => {
     v(1.3em, weak: true)
-    text(size: 13pt, weight: "regular", font: sans-fonts, it)
+    text(size: 13pt, weight: "regular", font: serif-fonts, it)
     v(1em, weak: true)
   }
 
   show heading.where(depth: 4): it => {
     v(1em, weak: true)
-    text(size: 11pt, weight: "light", font: sans-fonts, it)
+    text(size: 11pt, weight: "light", font: serif-fonts, it)
     v(0.65em, weak: true)
   }
 
   set par(leading: 0.65em, first-line-indent: 0em, spacing: 1.3em)
 
-  (
-    [#metadata((
-        identifier: identifier,
-        title: title,
-        date: if attrs.at("date", default: none) != none {
-          attrs.at("date").display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]")
-        } else {
-          none
-        },
-      )) <frontmatter>]
-  )
+  // (
+  //   [#metadata((
+  //       identifier: identifier,
+  //       title: title,
+  //       date: if attrs.at("date", default: none) != none {
+  //         attrs.at("date").display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]")
+  //       } else {
+  //         none
+  //       },
+  //     )) <frontmatter>]
+  // )
+
   _main-part(
     doc,
     identifier: identifier,
@@ -145,5 +170,40 @@
 
 #let ct-paged(dest, body) = link(dest, body)
 
-// #let tr-paged(url, show-metadata: false, expanded: true) = par(link(url))
-#let tr-paged(url, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = heading(depth: 2)[TRANSCUSION: #url]
+#let tr-paged(url, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
+  context state("show-metadata").update(show-metadata)
+  context state("expanded").update(expanded)
+  context state("disable-numbering").update(disable-numbering)
+  if demote-headings {
+    context counter("transclusion-depth").step()
+  }
+  let identifier = url.slice(3)
+  let path = id-names-map.at(identifier)
+  let c = include(path)
+  c.children.find((x) => x.func() == [#set text(size: 1pt)].func()).child
+  if (demote-headings) {
+    context counter("transclusion-depth").update((x) => x - 1)
+  }
+  context state("show-metadata").update(false)
+  context state("expanded").update(true)
+  context state("disable-numbering").update(false)
+}
+
+#let inline-tree-paged(
+  body,
+  identifier: none,
+  title: none,
+  expanded: true,
+  ..attrs,
+) = {
+  context state("expanded").update(expanded)
+  context counter("transclusion-depth").step()
+  _main-part(
+    body,
+    identifier: identifier,
+    title: title,
+    ..attrs,
+  )
+  context counter("transclusion-depth").update((x) => x - 1)
+  context state("expanded").update(true)
+}

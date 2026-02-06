@@ -8,3 +8,5 @@ dist/
 # Added by cargo
 
 /target
+/typ/id-author.json
+/typ/id-filename.json

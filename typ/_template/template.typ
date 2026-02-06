@@ -1,5 +1,5 @@
 #import "/_template/site.typ"
-#import "/_template/template-paged.typ": template-paged, ln-paged, ct-paged, tr-paged
+#import "/_template/template-paged.typ": template-paged, ln-paged, ct-paged, tr-paged, inline-tree-paged
 
 #let domain = sys.inputs.at("wb-domain", default: "")
 #let root-dir = sys.inputs.at("wb-root-dir", default: "/")
@@ -209,7 +209,7 @@
   })
 }
 
-#let inline-tree(
+#let inline-tree-html(
   body,
   identifier: none,
   title: none,
@@ -329,4 +329,10 @@
   tr-html
 } else {
   tr-paged
+}
+
+#let inline-tree = if target == "html" {
+  inline-tree-html
+} else {
+  inline-tree-paged
 }
