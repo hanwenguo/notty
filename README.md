@@ -59,6 +59,7 @@ wb compile \
 - Transclusion of notes
 - Backmatter generation (backlinks, contexts, references, related notes)
 - TOC generation
+- PDF export of individual notes
 - Include/exclude notes based on glob patterns
 
 ## Planned
@@ -70,7 +71,6 @@ wb compile \
 After the above features are implemented, Weibian will be feature-comparable to Forester. There are also some other nice-to-have features:
 
 - Watch mode
-- Pre-processing hook on source files (this can enable generating PDFs, for example)
 - More templating support
 - Parallel processing of notes
 
