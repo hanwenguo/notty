@@ -3,7 +3,7 @@
   title:      [Typst finds a sweet spot for taking scientific notes],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 06, second: 36),
   tags:       (),
-  author: ("hanwenguo",),
+  author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0001",
 )
 

@@ -3,7 +3,7 @@
   title:      [Writing in Weibian],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 13, second: 29),
   tags:       (),
-  author: ("hanwenguo",),
+  author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0008",
 )
 

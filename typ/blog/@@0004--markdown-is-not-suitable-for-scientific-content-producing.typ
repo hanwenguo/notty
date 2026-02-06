@@ -3,7 +3,7 @@
   title:      [Markdown is not suitable for scientific content producing],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 08, second: 12),
   tags:       (),
-  author: ("hanwenguo",),
+  author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0004",
 )
 

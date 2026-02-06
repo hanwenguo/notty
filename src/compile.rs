@@ -1,4 +1,11 @@
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::{Component, Path};
+
+use ecow::eco_format;
+
 use crate::error::StrResult;
+use crate::html::HtmlNote;
 
 use crate::args::CompileCommand;
 use crate::config::{BuildConfig, WeibianConfig};
@@ -13,7 +20,9 @@ pub fn compile(command: &CompileCommand, config: &WeibianConfig) -> StrResult<()
     let build_config = BuildConfig::from(&command.args, config)?;
 
     let html_notes = frontend::compile_html(&build_config)?;
+    let id_filename_map = build_id_filename_map(&build_config, &html_notes)?;
     backend::process_html(&build_config, html_notes)?;
+    write_id_filename_map(&build_config, &id_filename_map)?;
 
     // let mut world = SystemWorld::new(
     //     &command.args.input,
@@ -39,6 +48,73 @@ pub fn compile(command: &CompileCommand, config: &WeibianConfig) -> StrResult<()
     //     }
     // }
     Ok(())
+}
+
+fn build_id_filename_map(
+    build_config: &BuildConfig,
+    html_notes: &[HtmlNote],
+) -> StrResult<BTreeMap<String, String>> {
+    let mut id_filename_map = BTreeMap::new();
+
+    for note in html_notes {
+        let relative_path = note
+            .source_path
+            .strip_prefix(&build_config.input_directory)
+            .map_err(|_| {
+                eco_format!(
+                    "source path {} is not inside input directory {}",
+                    note.source_path.display(),
+                    build_config.input_directory.display()
+                )
+            })?;
+
+        let rooted_filename = to_root_absolute_filename(relative_path)?;
+        id_filename_map.insert(note.id.clone(), rooted_filename);
+    }
+
+    Ok(id_filename_map)
+}
+
+fn to_root_absolute_filename(relative_path: &Path) -> StrResult<String> {
+    let mut rooted_filename = String::from("/");
+    let mut first_component = true;
+
+    for component in relative_path.components() {
+        match component {
+            Component::Normal(segment) => {
+                if !first_component {
+                    rooted_filename.push('/');
+                }
+                rooted_filename.push_str(&segment.to_string_lossy());
+                first_component = false;
+            }
+            Component::CurDir => {}
+            _ => {
+                return Err(eco_format!(
+                    "cannot convert path {} into input-root absolute filename",
+                    relative_path.display()
+                ));
+            }
+        }
+    }
+
+    Ok(rooted_filename)
+}
+
+fn write_id_filename_map(
+    build_config: &BuildConfig,
+    id_filename_map: &BTreeMap<String, String>,
+) -> StrResult<()> {
+    let output_path = build_config.input_directory.join("id-filename.json");
+    let json = serde_json::to_string(id_filename_map)
+        .map_err(|err| eco_format!("failed to serialize id-filename map: {err}"))?;
+
+    fs::write(&output_path, json).map_err(|err| {
+        eco_format!(
+            "failed to write id-filename map file {}: {err}",
+            output_path.display()
+        )
+    })
 }
 
 // /// Caches exported files so that we can avoid re-exporting them if they haven't

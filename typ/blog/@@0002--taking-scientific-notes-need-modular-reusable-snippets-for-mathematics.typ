@@ -3,7 +3,7 @@
   title:      [Taking scientific notes need modular reusable snippets for mathematics],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 07, second: 49),
   tags:       (),
-  author: ("hanwenguo",),
+  author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0002",
 )
 

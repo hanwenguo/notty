@@ -1,7 +1,6 @@
 #import "site.typ"
 
-#let id-names-map = json("/id-filename.json")
-#let authors-map = json("/id-author.json")
+#let id-names-map = json(sys.inputs.at("wb-id-filename-map-file", default: bytes("{}")))
 
 #let sans-fonts = ("Inter", "IBM Plex Sans", "IBM Plex Sans SC")
 #let serif-fonts = ("Libertinus Serif", "IBM Plex Serif")
@@ -16,13 +15,7 @@
   [#block(width: 100%, [
     #set text(font: serif-fonts, size: 11pt)
     #if author != none {
-      author.map((a) => {
-        if type(a) == str {
-          authors-map.at(a, default: a)
-        } else {
-          a
-        }
-      }).join(", ")
+      author.map((a) => { a }).join(", ")
     }
     #if author != none and date != none { sym.dot.c }
     #if date != none { date.display("[month repr:long] [day], [year]") }
@@ -144,18 +137,6 @@
   }
 
   set par(leading: 0.65em, first-line-indent: 0em, spacing: 1.3em)
-
-  // (
-  //   [#metadata((
-  //       identifier: identifier,
-  //       title: title,
-  //       date: if attrs.at("date", default: none) != none {
-  //         attrs.at("date").display("[year repr:full][month repr:numerical][day]T[hour repr:24][minute][second]")
-  //       } else {
-  //         none
-  //       },
-  //     )) <frontmatter>]
-  // )
 
   _main-part(
     doc,

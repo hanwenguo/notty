@@ -422,40 +422,5 @@ Alo see `denote-find-link'."
               (fetcher (lambda () (xref-matches-in-files query files))))
     (xref-show-definitions-completing-read fetcher nil)))
 
-(defun denote-weibian-generate-id-filename-map-json ()
-  "Generate a JSON file mapping id to filenames for PDF export."
-  (interactive)
-  (let* ((directory (car (denote-directories)))
-         (output-file (expand-file-name "id-filename.json" directory))
-         (id-names (make-hash-table :test #'equal))
-         (files (denote-directory-files nil nil :text-only nil :has-identifier)))
-    (dolist (file files)
-      (when-let* ((relative-name (file-relative-name file directory))
-                  (root-absolute-name (expand-file-name relative-name "/"))
-                  (name (file-name-nondirectory file))
-                  (id (denote-retrieve-filename-identifier name)))
-        (puthash id root-absolute-name id-names)))
-    (with-temp-file output-file (json-insert id-names))))
-
-(defun denote-weibian-generate-author-map-json ()
-  "Generate a JSON file mapping id to author names for PDF export."
-  (interactive)
-  (let* ((directory (car (denote-directories)))
-         (output-file (expand-file-name "id-author.json" directory))
-         (id-names (make-hash-table :test #'equal))
-         (files (denote-directory-files "==Person\\(==.*\\|--.*\\|__.*\\|@@.*\\|\\..*\\)*$" nil :text-only nil :has-identifier)))
-    (dolist (file files)
-      (when-let* ((id (denote-retrieve-filename-identifier file))
-                  (name (denote-retrieve-front-matter-title-value file 'weibian)))
-        (puthash id name id-names)))
-    (with-temp-file output-file (json-insert id-names))))
-
-;;;###autoload
-(defun denote-weibian-generate-json-for-pdf-export ()
-  "Generate JSON files to be used by PDF export."
-  (interactive)
-  (denote-weibian-generate-id-filename-map-json)
-  (denote-weibian-generate-author-map-json))
-
 (provide 'denote-weibian)
 ;;; denote-weibian.el ends here

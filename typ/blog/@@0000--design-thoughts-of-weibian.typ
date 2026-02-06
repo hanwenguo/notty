@@ -3,7 +3,7 @@
   title:      [Design thoughts of Weibian],
   date:       datetime(year: 2025, month: 08, day: 17, hour: 22, minute: 26, second: 38),
   tags:       (),
-  author: ("hanwenguo",),
+  author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0000",
 )
 

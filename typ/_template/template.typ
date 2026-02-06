@@ -97,13 +97,7 @@
   })(attrs)
   _guard-and-render-metadata("author", (it) => {
     html.address(class: "author", {
-      it.map((a) => {
-        if type(a) == str {
-          ln-html("wb:" + a)[]
-        } else {
-          a
-        }
-      }).join(", ")
+      it.map((a) => { a }).join(", ")
     })
   })(attrs)
 }
@@ -189,15 +183,6 @@
   title: none,
   ..attrs,
 ) = {
-  // html.body(_section(
-  //   body,
-  //   level: 1,
-  //   identifier: identifier,
-  //   title: title,
-  //   date: date,
-  //   author: author,
-  //   ..attrs
-  // ))
   html.body({
     _summary_header(
       level: 1,

@@ -3,7 +3,7 @@
   title:      [How to set up Weibian],
   date:       datetime(year: 2025, month: 08, day: 19, hour: 22, minute: 12, second: 55),
   tags:       (),
-  author: ("hanwenguo",),
+  author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0007",
 )
 
