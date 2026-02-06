@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
 
 use ecow::eco_format;
 
@@ -8,6 +8,9 @@ use crate::error::StrResult;
 use crate::html::HtmlNote;
 
 use crate::args::CompileCommand;
+use crate::compiler::{
+    CliTypstCompiler, CompileArtifact, CompileOutput, CompileRequest, CompileTarget, TypstCompiler,
+};
 use crate::config::{BuildConfig, WeibianConfig};
 use crate::{backend, frontend};
 // use crate::args::Output;
@@ -16,13 +19,26 @@ use crate::{backend, frontend};
 // type CodespanResult<T> = Result<T, CodespanError>;
 // type CodespanError = codespan_reporting::files::Error;
 
+struct PdfExportNote {
+    id: String,
+    source_path: PathBuf,
+    export_pdf: bool,
+}
+
+const ID_FILENAME_MAP_FILENAME: &str = "id-filename.json";
+const ID_FILENAME_MAP_ROOT_PATH: &str = "/id-filename.json";
+
 pub fn compile(command: &CompileCommand, config: &WeibianConfig) -> StrResult<()> {
     let build_config = BuildConfig::from(&command.args, config)?;
+    let compiler = CliTypstCompiler;
 
-    let html_notes = frontend::compile_html(&build_config)?;
+    let html_notes = frontend::compile_html(&build_config, &compiler)?;
+    let pdf_export_notes = collect_pdf_export_notes(&html_notes)?;
     let id_filename_map = build_id_filename_map(&build_config, &html_notes)?;
+    let id_filename_map_json = serialize_id_filename_map(&id_filename_map)?;
     backend::process_html(&build_config, html_notes)?;
-    write_id_filename_map(&build_config, &id_filename_map)?;
+    write_id_filename_map(&build_config, id_filename_map_json.as_str())?;
+    export_pdf_notes(&build_config, &compiler, &pdf_export_notes)?;
 
     // let mut world = SystemWorld::new(
     //     &command.args.input,
@@ -47,6 +63,78 @@ pub fn compile(command: &CompileCommand, config: &WeibianConfig) -> StrResult<()
     //         }
     //     }
     // }
+    Ok(())
+}
+
+fn collect_pdf_export_notes(html_notes: &[HtmlNote]) -> StrResult<Vec<PdfExportNote>> {
+    let mut pdf_export_notes = Vec::with_capacity(html_notes.len());
+
+    for note in html_notes {
+        let metadata = crate::html::extract_metadata(&note.document).map_err(|err| {
+            eco_format!(
+                "failed to extract metadata for {}: {err}",
+                note.source_path.display()
+            )
+        })?;
+        pdf_export_notes.push(PdfExportNote {
+            id: note.id.clone(),
+            source_path: note.source_path.clone(),
+            export_pdf: should_export_pdf(&metadata),
+        });
+    }
+
+    Ok(pdf_export_notes)
+}
+
+fn should_export_pdf(metadata: &HashMap<String, String>) -> bool {
+    !metadata
+        .get("export-pdf")
+        .is_some_and(|value| value.eq_ignore_ascii_case("false"))
+}
+
+fn export_pdf_notes(
+    build_config: &BuildConfig,
+    compiler: &dyn TypstCompiler,
+    notes: &[PdfExportNote],
+) -> StrResult<()> {
+    if !notes.iter().any(|note| note.export_pdf) {
+        return Ok(());
+    }
+
+    let pdf_output_dir = build_config.output_directory.join("pdf");
+    fs::create_dir_all(&pdf_output_dir).map_err(|err| {
+        eco_format!(
+            "failed to create pdf output directory {}: {err}",
+            pdf_output_dir.display()
+        )
+    })?;
+
+    let additional_inputs = [("wb-id-filename-map-file", ID_FILENAME_MAP_ROOT_PATH)];
+
+    for note in notes {
+        if !note.export_pdf {
+            continue;
+        }
+
+        let output_path = pdf_output_dir.join(format!("{}.pdf", note.id));
+        let request = CompileRequest {
+            source: note.source_path.as_path(),
+            target: CompileTarget::Pdf,
+            output: CompileOutput::File(output_path.as_path()),
+            additional_inputs: &additional_inputs,
+        };
+
+        match compiler.compile(build_config, &request)? {
+            CompileArtifact::FileWritten => {}
+            CompileArtifact::Stdout(_) => {
+                return Err(eco_format!(
+                    "typst compiler returned stdout for pdf compilation of {}",
+                    note.source_path.display()
+                ));
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -75,6 +163,11 @@ fn build_id_filename_map(
     Ok(id_filename_map)
 }
 
+fn serialize_id_filename_map(id_filename_map: &BTreeMap<String, String>) -> StrResult<String> {
+    serde_json::to_string(id_filename_map)
+        .map_err(|err| eco_format!("failed to serialize id-filename map: {err}"))
+}
+
 fn to_root_absolute_filename(relative_path: &Path) -> StrResult<String> {
     let mut rooted_filename = String::from("/");
     let mut first_component = true;
@@ -101,15 +194,10 @@ fn to_root_absolute_filename(relative_path: &Path) -> StrResult<String> {
     Ok(rooted_filename)
 }
 
-fn write_id_filename_map(
-    build_config: &BuildConfig,
-    id_filename_map: &BTreeMap<String, String>,
-) -> StrResult<()> {
-    let output_path = build_config.input_directory.join("id-filename.json");
-    let json = serde_json::to_string(id_filename_map)
-        .map_err(|err| eco_format!("failed to serialize id-filename map: {err}"))?;
+fn write_id_filename_map(build_config: &BuildConfig, id_filename_map_json: &str) -> StrResult<()> {
+    let output_path = build_config.input_directory.join(ID_FILENAME_MAP_FILENAME);
 
-    fs::write(&output_path, json).map_err(|err| {
+    fs::write(&output_path, id_filename_map_json).map_err(|err| {
         eco_format!(
             "failed to write id-filename map file {}: {err}",
             output_path.display()

@@ -5,6 +5,7 @@
   tags:       (),
   author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0001",
+  export-pdf: true,
 )
 
 There are already plenty of note taking tools, and many of them have more or less support for taking notes of scientific thoughts. The bad news is that most of them, if not all, do not meet the criteria of taking scientific notes.

@@ -1,5 +1,6 @@
 mod args;
 mod backend;
+mod compiler;
 mod config;
 mod error;
 mod frontend;

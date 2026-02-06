@@ -91,7 +91,7 @@
   }
 }
 
-#let default-metadata = (attrs) => {
+#let default-metadata = (..attrs) => {
   _guard-and-render-metadata("date", (it) => {
     it.display("[month repr:long] [day], [year]")
   })(attrs)
@@ -100,10 +100,13 @@
       it.map((a) => { a }).join(", ")
     })
   })(attrs)
+  if attrs.at("export-pdf", default: false) {
+     _meta-item(link("/pdf/" + attrs.at("identifier", default: "") + ".pdf", "PDF"))
+  }
 }
 
 #let metadata-taxon-map-html = (
-  "Person": (attrs) => {
+  "Person": (..attrs) => {
     _guard-and-render-metadata("position", (it) => {
       it
     })(attrs)
@@ -151,7 +154,7 @@
           metadata-taxon-map-html.at(
             attrs.at("taxon", default: ""),
             default: default-metadata
-          )(attrs)
+          )(identifier: identifier, ..attrs)
         )
       })
     })
@@ -168,10 +171,15 @@
     if attrs.at("taxon", default: none) != none {
       html.meta(name: "taxon", content: attrs.at("taxon"))
     }
-    if attrs.at("toc", default: none) != none {
-      html.meta(name: "toc", content: if attrs.at("toc") { "true" } else { "false" })
-    } else {
+    if attrs.at("toc", default: true) {
       html.meta(name: "toc", content: "true")
+    } else {
+      html.meta(name: "toc", content: "false")
+    }
+    if attrs.at("export-pdf", default: false) {
+      html.meta(name: "export-pdf", content: "true")
+    } else {
+      html.meta(name: "export-pdf", content: "false")
     }
     html.title(plain-text(title))
   })

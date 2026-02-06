@@ -5,6 +5,7 @@
   tags:       (),
   author: (ln("wb:hanwenguo")[Hanwen Guo],),
   identifier: "0004",
+  export-pdf: true,
 )
 
 Given that #ln("wb:0002")[Taking scientific notes need modular reusable snippets for mathematics] and #ln("wb:0003")[Taking scientific notes needs full-power mathematical typesetting], it is obvious that Markdown, without extensions, does not satisfy any of the two principles, and any of the software-specific extensions that tries to solve these problems does not really solve them, just causing migration friction. This is because mathematics is alien to Markdown --- it is just not part of it, thus there cannot be effective integration.
