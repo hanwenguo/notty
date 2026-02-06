@@ -170,7 +170,6 @@ pub fn add_class_to_element(element: &mut scraper::node::Element, class: &str) {
     }
 }
 
-
 pub fn has_class(value: &str, class: &str) -> bool {
     value.split_whitespace().any(|item| item == class)
 }

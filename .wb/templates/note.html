@@ -31,7 +31,20 @@
           </details>
         </section>
         <footer>
-          {{ note.backmatter | safe }}
+          {% for section in note.backmatter_sections %}
+          <section class="block hide-metadata">
+            <details open>
+              <summary>
+                <header>
+                    <h2 class="disable-numbering">
+                      {{ section.title }}
+                    </h2>
+                </header>
+              </summary>
+              {{ section.content | wb_disable_numbering | wb_demote_headings | safe }}
+            </details>
+          </section>
+          {% endfor %}
         </footer>
       </article>
       {% set heading_count = note.toc.0.children | length %}

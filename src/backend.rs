@@ -61,13 +61,19 @@ struct Heading {
 }
 
 #[derive(Serialize)]
+struct BackmatterSection {
+    title: String,
+    content: String,
+}
+
+#[derive(Serialize)]
 struct NoteTemplateContext<'a> {
     id: &'a str,
     title: Option<&'a str>,
     metadata: &'a HashMap<String, String>,
     head: &'a str,
     content: &'a str,
-    backmatter: &'a str,
+    backmatter_sections: Vec<BackmatterSection>,
     toc: &'a [Heading],
 }
 
@@ -92,12 +98,6 @@ struct TransclusionTemplateContext<'a> {
     expanded: bool,
     disable_numbering: bool,
     demote_headings: bool,
-    content: &'a str,
-}
-
-#[derive(Serialize)]
-struct BackmatterSectionTemplateContext<'a> {
-    title: &'a str,
     content: &'a str,
 }
 
@@ -179,7 +179,7 @@ pub fn process_html(build_config: &BuildConfig, html_notes: Vec<HtmlNote>) -> St
         let rendered = rendered_notes
             .get(note_id)
             .ok_or_else(|| eco_format!("missing rendered note for {note_id}"))?;
-        let backmatter_html = build_backmatter_html(
+        let backmatter_sections = build_backmatter_sections(
             note_id,
             &backlinks,
             &contexts,
@@ -197,7 +197,7 @@ pub fn process_html(build_config: &BuildConfig, html_notes: Vec<HtmlNote>) -> St
             metadata: &processed.metadata,
             head: processed.head_html.as_str(),
             content: rendered.body_html.as_str(),
-            backmatter: backmatter_html.as_str(),
+            backmatter_sections,
             toc: &toc,
         };
         let site_context = site_template_context(&build_config.site);
@@ -625,7 +625,7 @@ fn compute_transcluded_descendants(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn build_backmatter_html(
+fn build_backmatter_sections(
     note_id: &str,
     backlinks: &HashMap<String, Vec<String>>,
     contexts: &HashMap<String, Vec<String>>,
@@ -634,12 +634,12 @@ fn build_backmatter_html(
     transclusion_lookup: &dyn TransclusionLookup,
     templates: &Tera,
     site: &SiteSettings,
-) -> StrResult<String> {
-    let mut sections = String::new();
+) -> StrResult<Vec<BackmatterSection>> {
+    let mut sections = vec![];
     if let Some(ids) = contexts.get(note_id) {
         let section =
             render_backmatter_section("Contexts", ids, transclusion_lookup, templates, site)?;
-        sections.push_str(&section);
+        sections.push(section);
     }
     if !references.is_empty() {
         let section = render_backmatter_section(
@@ -649,17 +649,17 @@ fn build_backmatter_html(
             templates,
             site,
         )?;
-        sections.push_str(&section);
+        sections.push(section);
     }
     if let Some(ids) = backlinks.get(note_id) {
         let section =
             render_backmatter_section("Backlinks", ids, transclusion_lookup, templates, site)?;
-        sections.push_str(&section);
+        sections.push(section);
     }
     if !related.is_empty() {
         let section =
             render_backmatter_section("Related", related, transclusion_lookup, templates, site)?;
-        sections.push_str(&section);
+        sections.push(section);
     }
     Ok(sections)
 }
@@ -670,9 +670,12 @@ fn render_backmatter_section(
     transclusion_lookup: &dyn TransclusionLookup,
     templates: &Tera,
     site: &SiteSettings,
-) -> StrResult<String> {
+) -> StrResult<BackmatterSection> {
     if included_note_ids.is_empty() {
-        return Ok(String::new());
+        return Ok(BackmatterSection {
+            title: title.to_string(),
+            content: String::new(),
+        });
     }
 
     let mut included_ids = included_note_ids.to_vec();
@@ -701,66 +704,12 @@ fn render_backmatter_section(
 
     let body_html = render_note_body(&virtual_note, transclusion_lookup, site, templates)?;
 
-    let section_context = BackmatterSectionTemplateContext {
-        title,
-        content: body_html.as_str(),
+    let section = BackmatterSection {
+        title: title.to_string(),
+        content: body_html,
     };
-
-    let site_context = site_template_context(site);
-    let mut context = Context::new();
-    context.insert("backmatter_section", &section_context);
-    context.insert("site", &site_context);
-    let section = render_template(templates, "backmatter_section.html", &context)?;
-
-    let virtual_transclusion_context = TransclusionTemplateContext {
-        target: "", // unused
-        show_metadata: false,
-        expanded: true,
-        disable_numbering: true,
-        demote_headings: true,
-        content: section.as_str(),
-    };
-
-    let section = render_transclusion(templates, site, &virtual_transclusion_context)?;
 
     Ok(section)
-
-    // if note_ids.is_empty() {
-    //     return Ok(String::new());
-    // }
-
-    // let mut ids = note_ids.to_vec();
-    // ids.sort();
-
-    // let mut out = String::new();
-    // out.push_str("<section class=\"backmatter ");
-    // out.push_str(class_name);
-    // out.push_str(" hide-metadata\">");
-    // out.push_str("<header><h2>");
-    // out.push_str(title);
-    // out.push_str("</h2></header>");
-    // out.push_str("<div class=\"backmatter-items\">");
-
-    // for id in ids {
-    //     let processed = processed_notes
-    //         .get(&id)
-    //         .ok_or_else(|| eco_format!("backmatter note {id} is missing processed html"))?;
-    //     let content_html = prepare_transclusion_content(processed.body_html.as_str())?;
-    //     let transclusion = TransclusionTemplateContext {
-    //         target: id.as_str(),
-    //         show_metadata: true,
-    //         expanded: false,
-    //         hide_numbering: false,
-    //         demote_headings: true,
-    //         content: content_html.as_str(),
-    //     };
-    //     let transclusion_html = render_transclusion(templates, site, &transclusion)?;
-    //     out.push_str(&transclusion_html);
-    // }
-
-    // out.push_str("</div></section>");
-
-    // Ok(out)
 }
 
 struct RenderContext<'a> {
