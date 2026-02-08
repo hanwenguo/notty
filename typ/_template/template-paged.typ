@@ -6,32 +6,111 @@
 #let heading-fonts = ("Libertinus Serif Display", "Libertinus Serif",)
 #let serif-fonts = ("Libertinus Serif",)
 
-#let metadata-taxon-map-paged = (
-  :
-)
+#let _meta-item(body) = {
+  body
+}
 
-#let _default-metadata(identifier, ..attrs) = {
+#let _guard-and-render-metadata(
+  name,
+  renderer
+) = (attrs) => {
+  if attrs.at(name, default: none) != none {
+    _meta-item(renderer(attrs.at(name)))
+  }
+}
+
+#let _default-metadata(..attrs) = {
   let author = attrs.at("author", default: none)
   let date = attrs.at("date", default: none)
-  [#block(width: 100%, [
-    #set text(font: serif-fonts, size: 11pt)
-    #if author != none {
-      author.map((a) => { a }).join(", ")
-    }
-    #if author != none and date != none { sym.dot.c }
-    #if date != none { date.display("[month repr:long] [day], [year]") }
-    #if author != none or date != none { v(0.5em) }
-  ]) <metadata>]
+  let metadata-entries = ()
+  if date != none { 
+    metadata-entries.push(date.display("[month repr:long] [day], [year]"))
+  }
+  if author != none {
+    metadata-entries.push(author.map((a) => { a }).join(", "))
+  }
+  metadata-entries
 }
+
+#let _common-metadata-for-bibliography-entry = (..attrs) => {
+  let fields = attrs.at("fields")
+  let parsed-names = attrs.at("parsed-names")
+  (
+    _guard-and-render-metadata("author", (it) => {
+      it.map((a) => { 
+        let main-name-part = a.given + " " + a.family
+        if a.at("prefix", default: "") != "" {
+          main-name-part = a.prefix + " " + main-name-part
+        }
+        if a.at("suffix", default: "") != "" {
+          main-name-part = main-name-part + ", " + a.suffix
+        }
+        main-name-part
+      }).join(", ")
+    })(parsed-names),
+    _guard-and-render-metadata("date", (it) => {
+      it
+    })(fields),
+    _guard-and-render-metadata("doi", (it) => {
+      link("https://doi.org/" + it)[#it]
+    })(fields),
+  )
+}
+
+#let metadata-taxon-map-paged = (
+  "Person": (..attrs) => {
+    (
+      _guard-and-render-metadata("position", (it) => {
+        it
+      })(attrs),
+      _guard-and-render-metadata("affiliation", (it) => {
+        it
+      })(attrs),
+      _guard-and-render-metadata("homepage", (it) => {
+        link(it)[#it]
+      })(attrs),
+      _guard-and-render-metadata("orcid", (it) => {
+        link("https://orcid.org/" + it)[#it]
+      })(attrs),
+    )
+  },
+  "Inproceedings": (..attrs) => {
+    let fields = attrs.at("fields")
+    (_guard-and-render-metadata("series", (it) => {
+      it
+    })(fields),) + _common-metadata-for-bibliography-entry(..attrs)
+  },
+  "Article": (..attrs) => {
+    let fields = attrs.at("fields")
+    let name = fields.at("shortjournal", default: none)
+    if name == none {
+      name = fields.at("journal", default: none)
+    }
+    if fields.at("volume", default: none) != none {
+      name = name + " " + fields.at("volume")
+    }
+    if fields.at("number", default: none) != none {
+      name = name + "." + fields.at("number")
+    }
+    (
+      _meta-item(name),
+    ) + _common-metadata-for-bibliography-entry(..attrs)
+  }
+)
 
 #let _metadata(identifier, ..attrs) = {
   let taxon = attrs.at("taxon", default: none)
-  if taxon != none {
+  let metadata-entries = if taxon != none {
     let f = metadata-taxon-map-paged.at(taxon, default: _default-metadata)
-    f(identifier, ..attrs)
+    f(identifier: identifier, ..attrs)
   } else {
-    _default-metadata(identifier, ..attrs)
+    _default-metadata(identifier: identifier, ..attrs)
   }
+  block(width: 100%, [
+    #set text(font: serif-fonts, size: 11pt)
+    #if metadata-entries.len() != 0 { metadata-entries.join([ #sym.dot.c ]) }
+    #if metadata-entries.len() != 0 { v(0.5em) }
+  ])
 }
 
 #let _main-part(
@@ -62,7 +141,7 @@
   }
   context if state("expanded", true).get() {
     content
-  } else [...]
+  }
 }
 
 #let wb-section = _main-part
@@ -172,10 +251,12 @@
   identifier: none,
   title: none,
   expanded: true,
+  disable-numbering: false,
   ..attrs,
 ) = {
   context state("expanded").update(expanded)
   context counter("transclusion-depth").step()
+  context state("disable-numbering").update(disable-numbering)
   _main-part(
     body,
     identifier: identifier,
@@ -184,4 +265,5 @@
   )
   context counter("transclusion-depth").update((x) => x - 1)
   context state("expanded").update(true)
+  context state("disable-numbering").update(false)
 }

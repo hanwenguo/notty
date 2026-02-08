@@ -91,7 +91,7 @@
   }
 }
 
-#let default-metadata = (..attrs) => {
+#let _default-metadata = (..attrs) => {
   _guard-and-render-metadata("date", (it) => {
     it.display("[month repr:long] [day], [year]")
   })(attrs)
@@ -105,7 +105,7 @@
   }
 }
 
-#let common-metadata-for-bibliography-entry = (..attrs) => {
+#let _common-metadata-for-bibliography-entry = (..attrs) => {
   let fields = attrs.at("fields")
   let parsed-names = attrs.at("parsed-names")
   _guard-and-render-metadata("author", (it) => {
@@ -153,7 +153,7 @@
     _guard-and-render-metadata("series", (it) => {
       it
     })(fields)
-    common-metadata-for-bibliography-entry(..attrs)
+    _common-metadata-for-bibliography-entry(..attrs)
   },
   "Article": (..attrs) => {
     let fields = attrs.at("fields")
@@ -168,7 +168,7 @@
       name = name + "." + fields.at("number")
     }
     _meta-item(name)
-    common-metadata-for-bibliography-entry(..attrs)
+    _common-metadata-for-bibliography-entry(..attrs)
   }
 )
 
@@ -208,7 +208,7 @@
         html.ul(
           metadata-taxon-map-html.at(
             attrs.at("taxon", default: ""),
-            default: default-metadata
+            default: _default-metadata
           )(identifier: identifier, ..attrs)
         )
       })
