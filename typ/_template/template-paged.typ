@@ -2,8 +2,9 @@
 
 #let id-names-map = json(sys.inputs.at("wb-id-filename-map-file", default: bytes("{}")))
 
-#let sans-fonts = ("Inter", "IBM Plex Sans", "IBM Plex Sans SC")
-#let serif-fonts = ("Libertinus Serif", "IBM Plex Serif")
+#let sans-fonts = ("Libertinus Sans", "Noto Sans SC", "Source Han Sans SC",)
+#let heading-fonts = ("Libertinus Serif Display", "Libertinus Serif",)
+#let serif-fonts = ("Libertinus Serif",)
 
 #let metadata-taxon-map-paged = (
   :

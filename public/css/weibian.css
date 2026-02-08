@@ -37,10 +37,12 @@
   --color-mark: light-dark(#dae5ec, #2f3849); /* bg-hl-line */
 
   /* Typography */
-  --font-body: "IBM Plex Serif", serif;
-  --font-size-base: 1rem;
-  --font-size-sm: 0.9375rem;
+  --font-body: "Libertinus Sans", sans-serif;
+  --font-heading: "Libertinus Serif Display", "Libertinus Serif", serif;
+  --font-size-base: 1.125rem;
+  --font-size-sm: 1rem;
   --font-size-xs: 0.875rem;
+  --font-size-heading-xl: 1.75rem;
   --font-size-heading-lg: 1.5rem;
   --font-size-heading-md: 1.375rem;
   --font-size-heading-sm: 1.125rem;
@@ -80,6 +82,7 @@ a {
    ======================================== */
 
 :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-heading);
   line-height: var(--line-height-heading);
   margin-block-end: 0;
   text-wrap: balance;
@@ -102,14 +105,17 @@ a {
 details :is(h1, h2, h3, h4, h5, h6) {
   font-size: var(--font-size-heading-xs);
   display: inline;
-  &:is(h1, h2, h3, h4) {
+  &:is(h1, h2) {
+    font-size: var(--font-size-heading-md);
+  }
+  &:is(h3, h4) {
     font-size: var(--font-size-heading-sm);
   }
 }
 
-/* p:last-child, p:has(+ section) {
+p:last-child, p:has(+ section) {
   margin-block-end: var(--space-sm);
-} */
+}
 
 summary {
   margin-block: var(--space-xs);
@@ -366,10 +372,10 @@ details > summary {
 
 article > section > details > summary > header {
   display: block;
-  margin-block-end: var(--space-sm);
+  margin-block-end: var(--space-md);
 
   & > h1 {
-    font-size: var(--font-size-heading-lg);
+    font-size: var(--font-size-heading-xl);
 
     & > .taxon {
       display: block;
