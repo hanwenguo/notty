@@ -20,6 +20,9 @@ pub struct WeibianConfig {
 
     #[serde(default)]
     pub site: SiteConfig,
+
+    #[serde(default)]
+    pub bibliography: BibliographyConfig,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -40,11 +43,23 @@ pub struct SiteConfig {
     pub trailing_slash: Option<bool>,
 }
 
+#[derive(Debug, Default, Deserialize)]
+pub struct BibliographyConfig {
+    pub file: Option<PathBuf>,
+    pub template: Option<PathBuf>,
+}
+
 #[derive(Debug, Clone)]
 pub struct SiteSettings {
     pub domain: Option<String>,
     pub root_dir: String,
     pub trailing_slash: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct BibliographySettings {
+    pub file: PathBuf,
+    pub template: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +105,7 @@ pub struct BuildConfig {
     pub public_directory: PathBuf,
     pub output_directory: PathBuf,
     pub site: SiteSettings,
+    pub bibliography: Option<BibliographySettings>,
     pub world: WorldArgs,
     pub process: ProcessArgs,
 }
@@ -144,6 +160,7 @@ impl BuildConfig {
             .site
             .trailing_slash
             .unwrap_or(config.site.trailing_slash.unwrap_or(false));
+        let bibliography = resolve_bibliography_settings(&config.bibliography)?;
         Ok(Self {
             input_directory,
             input_filters,
@@ -154,6 +171,7 @@ impl BuildConfig {
                 root_dir,
                 trailing_slash,
             },
+            bibliography,
             world: args.world.clone(),
             process: args.process.clone(),
         })
@@ -218,6 +236,49 @@ fn resolve_dir(cli: Option<&PathBuf>, config: Option<&PathBuf>, default: &str) -
     cli.cloned()
         .or_else(|| config.cloned())
         .unwrap_or_else(|| PathBuf::from(default))
+}
+
+fn resolve_bibliography_settings(
+    bibliography: &BibliographyConfig,
+) -> StrResult<Option<BibliographySettings>> {
+    let Some(file) = bibliography.file.as_ref() else {
+        if bibliography.template.is_some() {
+            return Err(eco_format!(
+                "bibliography.template is set but bibliography.file is missing in config"
+            ));
+        }
+        return Ok(None);
+    };
+
+    validate_regular_file(file, "bibliography.file")?;
+
+    let template = bibliography.template.as_ref().ok_or_else(|| {
+        eco_format!("bibliography.file is set but bibliography.template is missing in config")
+    })?;
+    validate_regular_file(template, "bibliography.template")?;
+
+    Ok(Some(BibliographySettings {
+        file: file.clone(),
+        template: template.clone(),
+    }))
+}
+
+fn validate_regular_file(path: &Path, label: &str) -> StrResult<()> {
+    if !path.exists() {
+        return Err(eco_format!(
+            "{label} points to a path that does not exist: {}",
+            path.display()
+        ));
+    }
+
+    if !path.is_file() {
+        return Err(eco_format!(
+            "{label} must point to a file, but got: {}",
+            path.display()
+        ));
+    }
+
+    Ok(())
 }
 
 fn normalize_root_dir(raw: Option<&str>) -> String {

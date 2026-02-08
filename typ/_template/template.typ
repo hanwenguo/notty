@@ -105,6 +105,31 @@
   }
 }
 
+#let common-metadata-for-bibliography-entry = (..attrs) => {
+  let fields = attrs.at("fields")
+  let parsed-names = attrs.at("parsed-names")
+  _guard-and-render-metadata("author", (it) => {
+    html.address(class: "author", {
+      it.map((a) => { 
+        let main-name-part = a.given + " " + a.family
+        if a.prefix != "" {
+          main-name-part = a.prefix + " " + main-name-part
+        }
+        if a.suffix != "" {
+          main-name-part = main-name-part + ", " + a.suffix
+        }
+        main-name-part
+      }).join(", ")
+    })
+  })(parsed-names)
+  _guard-and-render-metadata("date", (it) => {
+    it
+  })(fields)
+  _guard-and-render-metadata("doi", (it) => {
+    html.a(class: "link external", href: "https://doi.org/" + it)[#it]
+  })(fields)
+}
+
 #let metadata-taxon-map-html = (
   "Person": (..attrs) => {
     _guard-and-render-metadata("position", (it) => {
@@ -123,6 +148,28 @@
       )[#it]
     })(attrs)
   },
+  "Inproceedings": (..attrs) => {
+    let fields = attrs.at("fields")
+    _guard-and-render-metadata("series", (it) => {
+      it
+    })(fields)
+    common-metadata-for-bibliography-entry(..attrs)
+  },
+  "Article": (..attrs) => {
+    let fields = attrs.at("fields")
+    let name = fields.at("shortjournal", default: none)
+    if name == none {
+      name = fields.at("journal", default: none)
+    }
+    if fields.at("volume", default: none) != none {
+      name = name + " " + fields.at("volume")
+    }
+    if fields.at("number", default: none) != none {
+      name = name + "." + fields.at("number")
+    }
+    _meta-item(name)
+    common-metadata-for-bibliography-entry(..attrs)
+  }
 )
 
 #let _summary_header(
