@@ -151,20 +151,16 @@
 
 #let ct-paged(dest, body) = link(dest, body)
 
-#let tr-paged(url, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
+#let tr-paged(url, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: 1) = {
   context state("show-metadata").update(show-metadata)
   context state("expanded").update(expanded)
   context state("disable-numbering").update(disable-numbering)
-  if demote-headings {
-    context counter("transclusion-depth").step()
-  }
+  context counter("transclusion-depth").update((x) => x + demote-headings)
   let identifier = url.slice(3)
   let path = id-names-map.at(identifier)
   let c = include(path)
   c.children.find((x) => x.func() == [#set text(size: 1pt)].func()).child
-  if (demote-headings) {
-    context counter("transclusion-depth").update((x) => x - 1)
-  }
+  context counter("transclusion-depth").update((x) => x - demote-headings)
   context state("show-metadata").update(false)
   context state("expanded").update(true)
   context state("disable-numbering").update(false)

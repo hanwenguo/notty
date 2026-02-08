@@ -2,8 +2,8 @@
 {%- if transclusion.disable_numbering -%}
   {%- set html = html | wb_disable_numbering -%}
 {%- endif -%}
-{%- if transclusion.demote_headings -%}
-  {%- set html = html | wb_demote_headings -%}
+{%- if transclusion.demote_headings > 0 -%}
+  {%- set html = html | wb_demote_headings(levels=transclusion.demote_headings) -%}
 {%- endif -%}
 <section class="block {%- if not transclusion.show_metadata %} hide-metadata{%- endif -%}">
   <details {%- if transclusion.expanded %} open{%- endif -%}>

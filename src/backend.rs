@@ -97,7 +97,7 @@ struct TransclusionTemplateContext<'a> {
     show_metadata: bool,
     expanded: bool,
     disable_numbering: bool,
-    demote_headings: bool,
+    demote_headings: usize,
     content: &'a str,
 }
 
@@ -687,7 +687,7 @@ fn render_backmatter_section(
             String::new()
                 + "<wb-transclusion target=\""
                 + id.as_str()
-                + "\" show-metadata=\"true\" expanded=\"false\" hide-numbering=\"true\" demote-headings=\"true\"></wb-transclusion>"
+                + "\" show-metadata=\"true\" expanded=\"false\" hide-numbering=\"true\" demote-headings=\"1\"></wb-transclusion>"
         })
         .collect::<String>();
 
@@ -798,7 +798,7 @@ fn render_element(
                 let disable_numbering =
                     crate::html::parse_bool_attr(element.attr("disable-numbering"), false);
                 let demote_headings =
-                    crate::html::parse_bool_attr(element.attr("demote-headings"), true);
+                    crate::html::parse_non_negative_usize_attr(element.attr("demote-headings"), 1);
                 let content_html = prepare_transclusion_content(body_html)?;
                 let transclusion = TransclusionTemplateContext {
                     target: target.as_str(),
@@ -964,18 +964,23 @@ fn wb_disable_numbering_filter(
 
 fn wb_demote_headings_filter(
     value: &TeraValue,
-    _args: &HashMap<String, TeraValue>,
+    args: &HashMap<String, TeraValue>,
 ) -> tera::Result<TeraValue> {
     let html = value
         .as_str()
         .ok_or_else(|| TeraError::msg("wb_demote_headings expects a string value"))?;
+    let levels = parse_demote_levels(args)?;
+    if levels == 0 {
+        return Ok(TeraValue::String(html.to_string()));
+    }
     let mut fragment = Html::parse_fragment(html);
     let headings = {
         let root = fragment.tree.root();
         let mut headings = Vec::new();
         for node in root.descendants() {
             if let Some(element) = node.value().as_element()
-                && let Some(demoted) = demote_heading_tag(element.name())
+                && let Some(demoted) = demote_heading_tag(element.name(), levels)
+                && !element.name().eq_ignore_ascii_case(demoted)
             {
                 headings.push((node.id(), LocalName::from(demoted)));
             }
@@ -992,13 +997,42 @@ fn wb_demote_headings_filter(
     Ok(TeraValue::String(rendered))
 }
 
-fn demote_heading_tag(tag: &str) -> Option<&'static str> {
-    match tag.to_ascii_lowercase().as_str() {
-        "h1" => Some("h2"),
-        "h2" => Some("h3"),
-        "h3" => Some("h4"),
-        "h4" => Some("h5"),
-        "h5" => Some("h6"),
+fn parse_demote_levels(args: &HashMap<String, TeraValue>) -> tera::Result<usize> {
+    let Some(levels) = args.get("levels") else {
+        return Ok(1);
+    };
+    if let Some(levels) = levels.as_u64() {
+        return usize::try_from(levels)
+            .map_err(|_| TeraError::msg("wb_demote_headings levels value is too large"));
+    }
+    if let Some(levels) = levels.as_i64() {
+        if levels < 0 {
+            return Err(TeraError::msg(
+                "wb_demote_headings levels must be a non-negative integer",
+            ));
+        }
+        return usize::try_from(levels as u64)
+            .map_err(|_| TeraError::msg("wb_demote_headings levels value is too large"));
+    }
+    Err(TeraError::msg(
+        "wb_demote_headings expects `levels` to be a non-negative integer",
+    ))
+}
+
+fn demote_heading_tag(tag: &str, levels: usize) -> Option<&'static str> {
+    let level = heading_level(tag)?;
+    let demoted_level = (usize::from(level) + levels).min(6) as u8;
+    heading_tag(demoted_level)
+}
+
+fn heading_tag(level: u8) -> Option<&'static str> {
+    match level {
+        1 => Some("h1"),
+        2 => Some("h2"),
+        3 => Some("h3"),
+        4 => Some("h4"),
+        5 => Some("h5"),
+        6 => Some("h6"),
         _ => None,
     }
 }

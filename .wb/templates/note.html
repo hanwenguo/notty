@@ -41,7 +41,7 @@
                     </h2>
                 </header>
               </summary>
-              {{ section.content | wb_disable_numbering | wb_demote_headings | safe }}
+              {{ section.content | wb_disable_numbering | wb_demote_headings(levels=1) | safe }}
             </details>
           </section>
           {% endfor %}

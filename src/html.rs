@@ -116,6 +116,22 @@ pub fn parse_bool_attr(value: Option<&str>, default: bool) -> bool {
     }
 }
 
+pub fn parse_non_negative_usize_attr(value: Option<&str>, default: usize) -> usize {
+    match value {
+        Some(v) => {
+            let v = v.trim();
+            if v.eq_ignore_ascii_case("true") {
+                1
+            } else if v.eq_ignore_ascii_case("false") {
+                0
+            } else {
+                v.parse::<usize>().unwrap_or(default)
+            }
+        }
+        None => default,
+    }
+}
+
 pub fn normalize_target(raw: &str) -> String {
     let trimmed = raw.trim();
     let normalized = trimmed.strip_prefix("wb:").unwrap_or(trimmed).trim();

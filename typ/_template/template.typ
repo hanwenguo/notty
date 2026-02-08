@@ -65,7 +65,7 @@
   )
 }
 
-#let tr-html(id, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: true) = {
+#let tr-html(id, show-metadata: false, expanded: true, disable-numbering: false, demote-headings: 1) = {
   html.elem(
     "wb-transclusion",
     attrs: (
@@ -73,7 +73,7 @@
       show-metadata: if show-metadata { "true" } else { "false" },
       expanded: if expanded { "true" } else { "false" },
       disable-numbering: if disable-numbering { "true" } else { "false" },
-      demote-headings: if demote-headings { "true" } else { "false" }
+      demote-headings: str(demote-headings),
     )
   )
 }
