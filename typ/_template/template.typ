@@ -128,13 +128,21 @@
 #let _summary_header(
   level: 1,
   inline: false,
+  disable-numbering: false,
   identifier: none,
   title: none,
   ..attrs,
 ) = {
+  let heading-attrs = (:)
+  if identifier != none {
+    heading-attrs.insert("id", identifier)
+  }
+  if disable-numbering {
+    heading-attrs.insert("class", "disable-numbering")
+  }
   html.summary(
     html.header({
-      html.elem("h" + str(level), attrs: (id: identifier), {
+      html.elem("h" + str(level), attrs: heading-attrs, {
         if attrs.at("taxon", default: none) != none {
           html.span(class: "taxon", attrs.at("taxon"))
         }
@@ -207,6 +215,7 @@
   identifier: none,
   title: none,
   expanded: true,
+  disable-numbering: false,
   ..attrs,
 ) = {
   let details-attrs = if expanded {
@@ -221,6 +230,7 @@
         _summary_header(
           level: 2,
           inline: true,
+          disable-numbering: disable-numbering,
           identifier: identifier,
           title: title,
           ..attrs
