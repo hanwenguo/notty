@@ -168,16 +168,6 @@ fn generate_inputs_from_build_config(
             "false".to_string()
         },
     ));
-    if let Some(bibliography_config) = &build_config.bibliography {
-        inputs.push((
-            "wb-bib-file".to_string(),
-            bibliography_config.file.display().to_string(),
-        ));
-        inputs.push((
-            "wb-bib-template".to_string(),
-            bibliography_config.template.display().to_string(),
-        ));
-    }
     inputs.push(("wb-target".to_string(), target.as_str().to_string()));
     inputs
 }

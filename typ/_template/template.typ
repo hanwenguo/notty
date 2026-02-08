@@ -112,10 +112,10 @@
     html.address(class: "author", {
       it.map((a) => { 
         let main-name-part = a.given + " " + a.family
-        if a.prefix != "" {
+        if a.at("prefix", default: "") != "" {
           main-name-part = a.prefix + " " + main-name-part
         }
-        if a.suffix != "" {
+        if a.at("suffix", default: "") != "" {
           main-name-part = main-name-part + ", " + a.suffix
         }
         main-name-part

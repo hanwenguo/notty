@@ -3,13 +3,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::error::StrResult;
-use biblatex::Bibliography;
 use ecow::eco_format;
 
 use crate::compiler::{
     CompileArtifact, CompileOutput, CompileRequest, CompileTarget, TypstCompiler,
 };
-use crate::config::{BibliographySettings, BuildConfig};
+use crate::config::BuildConfig;
 use crate::html::HtmlNote;
 
 pub fn compile_html(
@@ -21,20 +20,7 @@ pub fn compile_html(
     let mut note_sources: HashMap<String, String> = HashMap::new();
     let mut notes = Vec::new();
 
-    if let Some(bibliography) = build_config.bibliography.as_ref() {
-        compile_bibliography_notes(
-            build_config,
-            compiler,
-            bibliography,
-            &mut note_sources,
-            &mut notes,
-        )?;
-    }
-
-    let mut sources = collect_typst_sources(build_config)?;
-    if let Some(bibliography) = build_config.bibliography.as_ref() {
-        sources.retain(|source| !same_file(source.as_path(), bibliography.template.as_path()));
-    }
+    let sources = collect_typst_sources(build_config)?;
 
     if sources.is_empty() && notes.is_empty() {
         if build_config.input_filters.has_filters() {
@@ -61,36 +47,6 @@ pub fn compile_html(
     }
 
     Ok(notes)
-}
-
-fn compile_bibliography_notes(
-    build_config: &BuildConfig,
-    compiler: &dyn TypstCompiler,
-    bibliography: &BibliographySettings,
-    note_sources: &mut HashMap<String, String>,
-    notes: &mut Vec<HtmlNote>,
-) -> StrResult<()> {
-    let citation_keys = extract_citation_keys(bibliography.file.as_path())?;
-    notes.reserve(citation_keys.len());
-
-    for citation_key in citation_keys {
-        let additional_inputs = [("wb-bib-key", citation_key.as_str())];
-        let note = compile_source_to_html(
-            build_config,
-            compiler,
-            bibliography.template.as_path(),
-            &additional_inputs,
-        )?;
-
-        let source_description = format!(
-            "{} [wb-bib-key={}]",
-            bibliography.template.display(),
-            citation_key
-        );
-        register_note(note, source_description, note_sources, notes)?;
-    }
-
-    Ok(())
 }
 
 fn compile_source_to_html(
@@ -139,32 +95,6 @@ fn register_note(
     note_sources.insert(note.id.clone(), source_description);
     notes.push(note);
     Ok(())
-}
-
-fn extract_citation_keys(path: &Path) -> StrResult<Vec<String>> {
-    let source = fs::read_to_string(path)
-        .map_err(|err| eco_format!("failed to read bibliography file {}: {err}", path.display()))?;
-    let bibliography = Bibliography::parse(source.as_str()).map_err(|err| {
-        eco_format!(
-            "failed to parse bibliography file {}: {err}",
-            path.display()
-        )
-    })?;
-    Ok(bibliography
-        .keys()
-        .map(|key| key.to_string())
-        .collect::<Vec<_>>())
-}
-
-fn same_file(left: &Path, right: &Path) -> bool {
-    if left == right {
-        return true;
-    }
-
-    match (fs::canonicalize(left), fs::canonicalize(right)) {
-        (Ok(left), Ok(right)) => left == right,
-        _ => false,
-    }
 }
 
 fn collect_typst_sources(build_config: &BuildConfig) -> StrResult<Vec<PathBuf>> {
