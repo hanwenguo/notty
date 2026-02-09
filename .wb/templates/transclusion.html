@@ -5,7 +5,10 @@
 {%- if transclusion.demote_headings > 0 -%}
   {%- set html = html | wb_demote_headings(levels=transclusion.demote_headings) -%}
 {%- endif -%}
-<section class="block {%- if not transclusion.show_metadata %} hide-metadata{%- endif -%}">
+<section class="block {%- if not transclusion.show_metadata %} hide-metadata{%- endif -%}" lang="{{transclusion.metadata.lang}}">
+  {%- if transclusion.show_metadata and transclusion.metadata.title is defined -%}
+    <h1>{{ transclusion.metadata.title }}</h1>
+  {%- endif -%}
   <details {%- if transclusion.expanded %} open{%- endif -%}>
     {{ html | safe }}
   </details>

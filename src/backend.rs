@@ -31,15 +31,21 @@ struct ProcessedNote {
 
 struct RenderedNote {
     body_html: String,
+    metadata: HashMap<String, String>,
     citations: Vec<String>,
     related: Vec<String>,
 }
 
 trait TransclusionLookup {
+    fn metadata(&self, id: &str) -> Option<&HashMap<String, String>>;
     fn body_html(&self, id: &str) -> Option<&str>;
 }
 
 impl TransclusionLookup for HashMap<String, ProcessedNote> {
+    fn metadata(&self, id: &str) -> Option<&HashMap<String, String>> {
+        self.get(id).map(|note| &note.metadata)
+    }
+
     fn body_html(&self, id: &str) -> Option<&str> {
         self.get(id).map(|note| note.body_html.as_str())
     }
@@ -48,6 +54,10 @@ impl TransclusionLookup for HashMap<String, ProcessedNote> {
 impl TransclusionLookup for HashMap<String, RenderedNote> {
     fn body_html(&self, id: &str) -> Option<&str> {
         self.get(id).map(|note| note.body_html.as_str())
+    }
+
+    fn metadata(&self, id: &str) -> Option<&HashMap<String, String>> {
+        self.get(id).map(|note| &note.metadata)
     }
 }
 
@@ -98,6 +108,7 @@ struct TransclusionTemplateContext<'a> {
     expanded: bool,
     disable_numbering: bool,
     demote_headings: usize,
+    metadata: HashMap<String, String>,
     content: &'a str,
 }
 
@@ -155,6 +166,7 @@ pub fn process_html(build_config: &BuildConfig, html_notes: Vec<HtmlNote>) -> St
             note_id.clone(),
             RenderedNote {
                 body_html,
+                metadata: processed.metadata.clone(),
                 citations,
                 related,
             },
@@ -792,6 +804,7 @@ fn render_element(
                         path_display(context)
                     )
                 })?;
+                let metadata = transclusion_lookup.metadata(&target).cloned().unwrap_or_default();
                 let show_metadata =
                     crate::html::parse_bool_attr(element.attr("show-metadata"), true);
                 let expanded = crate::html::parse_bool_attr(element.attr("expanded"), true);
@@ -806,6 +819,7 @@ fn render_element(
                     expanded,
                     disable_numbering,
                     demote_headings,
+                    metadata,
                     content: content_html.as_str(),
                 };
                 return render_transclusion(templates, site, &transclusion);
