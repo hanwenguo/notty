@@ -1,23 +1,11 @@
 #import "site.typ"
+#import "/_template/lib.typ": plain-text, domain, root-dir, trailing-slash, target, _guard-and-render-metadata, _meta-item-paged as _meta-item
 
 #let id-names-map = json(sys.inputs.at("wb-id-filename-map-file", default: bytes("{}")))
 
 #let sans-fonts = ("Libertinus Sans", "Noto Sans SC", "Source Han Sans SC",)
 #let heading-fonts = ("Libertinus Serif Display", "Libertinus Serif",)
 #let serif-fonts = ("Libertinus Serif",)
-
-#let _meta-item(body) = {
-  body
-}
-
-#let _guard-and-render-metadata(
-  name,
-  renderer
-) = (attrs) => {
-  if attrs.at(name, default: none) != none {
-    _meta-item(renderer(attrs.at(name)))
-  }
-}
 
 #let _default-metadata(..attrs) = {
   let author = attrs.at("author", default: none)
@@ -96,7 +84,7 @@
       _meta-item(name),
     ) + _common-metadata-for-bibliography-entry(..attrs)
   }
-)
+) + site.metadata-taxon-map-paged
 
 #let _metadata(identifier, ..attrs) = {
   let taxon = attrs.at("taxon", default: none)

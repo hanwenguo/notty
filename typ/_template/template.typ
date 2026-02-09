@@ -1,47 +1,6 @@
 #import "/_template/site.typ"
+#import "/_template/lib.typ": plain-text, domain, root-dir, trailing-slash, target, _guard-and-render-metadata, _meta-item-html as _meta-item
 #import "/_template/template-paged.typ": template-paged, ln-paged, ct-paged, tr-paged, inline-tree-paged
-
-#let domain = sys.inputs.at("wb-domain", default: "")
-#let root-dir = sys.inputs.at("wb-root-dir", default: "/")
-#let trailing-slash = if sys.inputs.at("wb-trailing-slash", default: "false") == "true" {
-  true
-} else {
-  false
-}
-#let target = sys.inputs.at("wb-target", default: none)
-
-#let _sequence = [].func()
-#let _styled = [#set text(size: 1pt)].func()
-#let _equation = $1$.func();
-
-/// Collect text content of element recursively into a single string
-/// https://discord.com/channels/1054443721975922748/1088371919725793360/1138586827708702810
-/// https://github.com/Myriad-Dreamin/shiroa/issues/55
-#let plain-text(it) = {
-  if type(it) == str {
-    return it
-  } else if it == [ ] {
-    return " "
-  }
-  let f = it.func()
-  if f == _styled {
-    plain-text(it.child)
-  } else if f == _equation {
-    plain-text(it.body)
-  } else if f == text or f == raw {
-    it.text
-  } else if f == smartquote {
-    if it.double {
-      "\""
-    } else {
-      "'"
-    }
-  } else if f == _sequence {
-    it.children.map(plain-text).filter(t => type(t) == str).join()
-  } else {
-    none
-  }
-}
 
 #let ln-html(dest, body) = {
   html.span(
@@ -78,30 +37,17 @@
   )
 }
 
-#let _meta-item(body) = {
-  html.li(class: "meta-item", body)
-}
-
-#let _guard-and-render-metadata(
-  name,
-  renderer
-) = (attrs) => {
-  if attrs.at(name, default: none) != none {
-    _meta-item(renderer(attrs.at(name)))
-  }
-}
-
 #let _default-metadata = (..attrs) => {
   _guard-and-render-metadata("date", (it) => {
-    it.display("[month repr:long] [day], [year]")
+    _meta-item(it.display("[month repr:long] [day], [year]"))
   })(attrs)
   _guard-and-render-metadata("author", (it) => {
-    html.address(class: "author", {
+    _meta-item(html.address(class: "author", {
       it.map((a) => { a }).join(", ")
-    })
+    }))
   })(attrs)
   if attrs.at("export-pdf", default: false) {
-     _meta-item(link("/pdf/" + attrs.at("identifier", default: "") + ".pdf", "PDF"))
+    _meta-item(link("/pdf/" + attrs.at("identifier", default: "") + ".pdf", "PDF"))
   }
 }
 
@@ -109,7 +55,7 @@
   let fields = attrs.at("fields")
   let parsed-names = attrs.at("parsed-names")
   _guard-and-render-metadata("author", (it) => {
-    html.address(class: "author", {
+    _meta-item(html.address(class: "author", {
       it.map((a) => { 
         let main-name-part = a.given + " " + a.family
         if a.at("prefix", default: "") != "" {
@@ -120,38 +66,38 @@
         }
         main-name-part
       }).join(", ")
-    })
+    }))
   })(parsed-names)
   _guard-and-render-metadata("date", (it) => {
-    it
+    _meta-item(it)
   })(fields)
   _guard-and-render-metadata("doi", (it) => {
-    html.a(class: "link external", href: "https://doi.org/" + it)[#it]
+    _meta-item(html.a(class: "link external", href: "https://doi.org/" + it)[#it])
   })(fields)
 }
 
 #let metadata-taxon-map-html = (
   "Person": (..attrs) => {
     _guard-and-render-metadata("position", (it) => {
-      it
+      _meta-item(it)
     })(attrs)
     _guard-and-render-metadata("affiliation", (it) => {
-      it
+      _meta-item(it)
     })(attrs)
     _guard-and-render-metadata("homepage", (it) => {
-      html.a(class: "link external", href: it)[#it]
+      _meta-item(html.a(class: "link external", href: it)[#it])
     })(attrs)
     _guard-and-render-metadata("orcid", (it) => {
-      html.a(
+      _meta-item(html.a(
         class: "orcid",
         href: "https://orcid.org/" + it
-      )[#it]
+      )[#it])
     })(attrs)
   },
   "Inproceedings": (..attrs) => {
     let fields = attrs.at("fields")
     _guard-and-render-metadata("series", (it) => {
-      it
+      _meta-item(it)
     })(fields)
     _common-metadata-for-bibliography-entry(..attrs)
   },
@@ -170,7 +116,7 @@
     _meta-item(name)
     _common-metadata-for-bibliography-entry(..attrs)
   }
-)
+) + site.metadata-taxon-map-html
 
 #let _summary_header(
   level: 1,
