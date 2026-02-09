@@ -4,8 +4,7 @@
 #let id-names-map = json(sys.inputs.at("wb-id-filename-map-file", default: bytes("{}")))
 
 #let sans-fonts = ("Libertinus Sans", "Noto Sans SC", "Source Han Sans SC",)
-#let heading-fonts = ("Libertinus Serif Display", "Libertinus Serif",)
-#let serif-fonts = ("Libertinus Serif",)
+#let serif-fonts = ("Libertinus Serif", "Noto Serif SC", "Source Han Serif SC",)
 
 #let _default-metadata(..attrs) = {
   let author = attrs.at("author", default: none)

@@ -172,6 +172,9 @@
     if attrs.at("taxon", default: none) != none {
       html.meta(name: "taxon", content: attrs.at("taxon"))
     }
+    if attrs.at("lang", default: site.config.default-lang) != none {
+      html.meta(name: "lang", content: attrs.at("lang", default: site.config.default-lang))
+    }
     if attrs.at("toc", default: true) {
       html.meta(name: "toc", content: "true")
     } else {

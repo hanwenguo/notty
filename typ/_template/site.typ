@@ -2,7 +2,8 @@
 
 #let config = (
   math-fonts: ("Libertinus Math",),
-  foreground-color: (rgb("#000000"), rgb("#ffffff"))
+  foreground-color: (rgb("#000000"), rgb("#ffffff")),
+  default-lang: "en",
 )
 
 #let metadata-taxon-map-html = (:)
