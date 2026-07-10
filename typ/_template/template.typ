@@ -387,7 +387,6 @@
   show-metadata: true,
   expanded: true,
   disable-numbering: false,
-  level: 2,
   ..attrs,
 ) = {
   context counter("transclusion-depth").update(x => x + 1)
@@ -398,7 +397,7 @@
     show-metadata: show-metadata,
     expanded: expanded,
     disable-numbering: disable-numbering,
-    body,
+    html.div(body),
     ..attrs,
   )
 
@@ -499,8 +498,9 @@
         html.link(rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous")
         html.link(
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Libertinus+Sans:ital,wght@0,400;0,700;1,400&family=Libertinus+Math&family=Libertinus+Serif+Display&family=Libertinus+Serif:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap",
+          href: "https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap",
         )
+        html.link(rel: "stylesheet", href: "/css/stix-two-math.css")
         html.meta(name: "identifier", content: identifier)
         html.meta(name: "lang", content: lang)
         html.title(plain-text(title))
