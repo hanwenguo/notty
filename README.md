@@ -19,8 +19,8 @@ brew install hanwenguo/tap/weibian
 ```
 
 The tap builds Weibian from the tagged source release and provides bottles for
-Apple Silicon and Intel macOS, and for ARM64 and x86-64 Linux. The installed
-binary is named `wb`.
+Apple Silicon on macOS 26, and for ARM64 and x86-64 Linux. Intel macOS is not
+supported. The installed binary is named `wb`.
 
 ### Install from source (local checkout)
 
