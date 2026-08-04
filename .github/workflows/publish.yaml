@@ -1,6 +1,7 @@
 name: publish
 
 on:
+  pull_request:
   push:
     tags:
       - "v*"
@@ -18,13 +19,13 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Confirm tag matches Cargo.toml
+      - name: Read and verify version
         id: version
         shell: bash
         run: |
           set -euo pipefail
           version="$(cargo metadata --no-deps --format-version 1 | jq -er '.packages[0].version')"
-          if [[ "$GITHUB_REF_TYPE" != "tag" || "$GITHUB_REF_NAME" != "v$version" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF_NAME" != "v$version" ]]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match Cargo.toml version $version."
             exit 1
           fi
@@ -54,8 +55,10 @@ jobs:
 
   build:
     name: Build for ${{ matrix.target }}
-    needs: [create-release]
-    if: startsWith(github.ref, 'refs/tags/')
+    needs: [verify, create-release]
+    if: >-
+      always() && needs.verify.result == 'success' &&
+      (github.event_name == 'pull_request' || needs.create-release.result == 'success')
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -89,8 +92,28 @@ jobs:
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
 
-      - name: Build
+      - name: Build (Linux, static OpenSSL)
+        if: runner.os == 'Linux'
+        env:
+          OPENSSL_STATIC: "1"
         run: cargo build --verbose --bin=wb --release --locked --target=${{ matrix.target }}
+
+      - name: Build
+        if: runner.os != 'Linux'
+        run: cargo build --verbose --bin=wb --release --locked --target=${{ matrix.target }}
+
+      - name: Verify Linux linkage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="target/${{ matrix.target }}/release/wb"
+          if ldd "$binary" | grep -Eq 'lib(ssl|crypto)\.so'
+          then
+            echo "::error::Linux release must not dynamically link OpenSSL."
+            ldd "$binary"
+            exit 1
+          fi
 
       - name: Package (unix)
         if: matrix.archive == 'tar.gz'
