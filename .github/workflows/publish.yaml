@@ -92,10 +92,8 @@ jobs:
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
 
-      - name: Build (Linux, static OpenSSL)
+      - name: Build (Linux, vendored OpenSSL)
         if: runner.os == 'Linux'
-        env:
-          OPENSSL_STATIC: "1"
         run: cargo build --verbose --bin=wb --release --locked --target=${{ matrix.target }}
 
       - name: Build
