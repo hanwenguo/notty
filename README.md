@@ -12,6 +12,16 @@ Weibian uses Typst as a library by default, so no separate Typst installation is
 
 ## Installation
 
+### Homebrew
+
+```bash
+brew install hanwenguo/tap/weibian
+```
+
+The tap builds Weibian from the tagged source release and provides bottles for
+Apple Silicon and Intel macOS, and for ARM64 and x86-64 Linux. The installed
+binary is named `wb`.
+
 ### Install from source (local checkout)
 
 ```bash
