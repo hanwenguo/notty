@@ -6,8 +6,38 @@ on:
       - "v*"
 
 jobs:
+  verify:
+    name: Verify release tag
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Confirm tag matches Cargo.toml
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(cargo metadata --no-deps --format-version 1 | jq -er '.packages[0].version')"
+          if [[ "$GITHUB_REF_TYPE" != "tag" || "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match Cargo.toml version $version."
+            exit 1
+          fi
+          case "$version" in
+            *-*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
   create-release:
     name: Create GitHub release
+    needs: [verify]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -16,7 +46,9 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: ${{ contains(github.ref, '-') }}
+          generate_release_notes: true
+          name: Weibian ${{ needs.verify.outputs.version }}
+          prerelease: ${{ needs.verify.outputs.prerelease }}
 
   build:
     name: Build for ${{ matrix.target }}
@@ -42,7 +74,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             archive: zip
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -81,7 +113,7 @@ jobs:
 
   upload-release-assets:
     name: Upload release assets
-    needs: [build]
+    needs: [verify, build]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
@@ -96,4 +128,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
-          prerelease: ${{ contains(github.ref, '-') }}
+          prerelease: ${{ needs.verify.outputs.prerelease }}
