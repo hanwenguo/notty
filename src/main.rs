@@ -10,7 +10,7 @@ mod watch;
 use std::{cell::Cell, io, io::Write, process::ExitCode, sync::LazyLock};
 
 use args::*;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use codespan_reporting::term;
 use termcolor::WriteColor;
 
@@ -44,12 +44,19 @@ fn main() -> ExitCode {
 
 /// Execute the requested command.
 fn dispatch() -> StrResult<()> {
-    // let mut timer = Timer::new(&ARGS);
-    let config = crate::config::load_config(ARGS.global.config_file.as_deref())?;
-
     match &ARGS.command {
-        Command::Compile(command) => crate::compile::compile(command, &config)?,
-        Command::Watch(command) => crate::watch::watch(command, &config)?,
+        Command::Compile(command) => {
+            let config = crate::config::load_config(ARGS.global.config_file.as_deref())?;
+            crate::compile::compile(command, &config)?;
+        }
+        Command::Watch(command) => {
+            let config = crate::config::load_config(ARGS.global.config_file.as_deref())?;
+            crate::watch::watch(command, &config)?;
+        }
+        Command::Completions { shell } => {
+            let mut command = CliArguments::command();
+            clap_complete::generate(*shell, &mut command, "wb", &mut io::stdout());
+        }
     }
 
     Ok(())

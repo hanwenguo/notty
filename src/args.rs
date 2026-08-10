@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use clap::builder::{BoolishValueParser, TypedValueParser, ValueParser};
 use clap::{ArgAction, Args, Parser, Subcommand, ValueEnum, ValueHint};
+use clap_complete::Shell;
 use serde::Deserialize;
 
 /// The character typically used to separate path components
@@ -72,6 +73,13 @@ pub enum Command {
     /// Watches Typst notes and recompiles on changes.
     #[command(visible_alias = "w")]
     Watch(WatchCommand),
+
+    /// Generates a shell completion script.
+    Completions {
+        /// Shell whose completion script should be generated.
+        #[arg(value_enum)]
+        shell: Shell,
+    },
 }
 
 /// Compiles Typst notes to a bundle.
@@ -553,7 +561,8 @@ fn output_value_parser() -> impl TypedValueParser<Value = CompileOutputPath> {
 mod tests {
     use std::path::PathBuf;
 
-    use clap::Parser;
+    use clap::{CommandFactory, Parser};
+    use clap_complete::Shell;
 
     use super::{CliArguments, Command, CompilerBackendKind};
 
@@ -588,5 +597,16 @@ mod tests {
         assert!(command.server.no_serve);
         assert!(command.server.no_reload);
         assert_eq!(command.server.port, Some(4000));
+    }
+
+    #[test]
+    fn supported_shell_completions_name_the_wb_command() {
+        for shell in [Shell::Bash, Shell::Zsh, Shell::Fish] {
+            let mut command = CliArguments::command();
+            let mut output = Vec::new();
+            clap_complete::generate(shell, &mut command, "wb", &mut output);
+            let output = String::from_utf8(output).unwrap();
+            assert!(output.contains("wb"), "{shell} completion did not name wb");
+        }
     }
 }
