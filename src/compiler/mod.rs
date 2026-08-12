@@ -8,6 +8,8 @@ use crate::error::StrResult;
 pub mod host;
 #[cfg(feature = "library-compiler")]
 pub mod library;
+#[cfg(feature = "library-compiler")]
+pub(crate) mod world;
 
 pub trait CompilerBackend {
     fn compile_bundle(build_config: &BuildConfig, entrypoint: &str) -> StrResult<()>;

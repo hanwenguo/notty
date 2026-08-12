@@ -4,6 +4,8 @@
 //! can serve as the client's long-lived formula preview process.
 
 #[cfg(feature = "library-compiler")]
+mod project;
+#[cfg(feature = "library-compiler")]
 mod protocol;
 #[cfg(feature = "library-compiler")]
 mod render;
@@ -23,24 +25,25 @@ use crate::error::StrResult;
 
 /// Runs the TFP protocol server for one project root.
 #[cfg(feature = "library-compiler")]
-pub fn run(root: &Path) -> StrResult<()> {
-    run_server(root).map_err(Into::into)
+pub fn run(root: &Path, config_path: Option<&Path>) -> StrResult<()> {
+    let project = project::WeibianProject::discover(root, config_path)?;
+    run_server(root, project).map_err(Into::into)
 }
 
 #[cfg(not(feature = "library-compiler"))]
-pub fn run(_root: &Path) -> StrResult<()> {
+pub fn run(_root: &Path, _config_path: Option<&Path>) -> StrResult<()> {
     Err(eco_format!(
         "TFP server mode requires a binary built with the `library-compiler` feature"
     ))
 }
 
 #[cfg(feature = "library-compiler")]
-fn run_server(root: &Path) -> Result<(), String> {
+fn run_server(root: &Path, project: project::WeibianProject) -> Result<(), String> {
     use std::collections::VecDeque;
     use std::io::{self, BufReader};
     use std::sync::mpsc;
 
-    let server = server::Server::new(root.to_owned())?;
+    let server = server::Server::new(root.to_owned(), project)?;
     let (sender, receiver) = mpsc::channel();
     let worker = std::thread::Builder::new()
         .name("tfp-compiler".into())

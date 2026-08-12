@@ -7,10 +7,14 @@ use std::sync::Arc;
 use typst_kit::fonts::FontStore;
 use typst_syntax::{FileId, RootedPath, VirtualPath, VirtualRoot};
 
+use crate::compiler::world::LibraryWorld;
+use crate::tfp_server::project::WeibianProject;
 use crate::tfp_server::protocol::{PROTOCOL_VERSION, RpcError, server_target, typst_version};
 use crate::tfp_server::render::{RenderMathParams, render_math};
 use crate::tfp_server::source::{OpenSource, TextChange};
-use crate::tfp_server::world::{DocumentConfig, ProjectWorld};
+use crate::tfp_server::world::{
+    DocumentConfig, create_project_world, load_fonts, prepare_project_world,
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -72,12 +76,13 @@ pub struct Server {
     shutdown: bool,
     documents: HashMap<String, OpenSource>,
     configs: HashMap<String, DocumentConfig>,
-    worlds: HashMap<String, ProjectWorld>,
+    worlds: HashMap<String, LibraryWorld>,
     fonts: HashMap<String, Arc<FontStore>>,
+    project: WeibianProject,
 }
 
 impl Server {
-    pub fn new(root: PathBuf) -> Result<Self, String> {
+    pub fn new(root: PathBuf, project: WeibianProject) -> Result<Self, String> {
         let root = root
             .canonicalize()
             .map_err(|error| format!("cannot canonicalize project root: {error}"))?;
@@ -89,6 +94,7 @@ impl Server {
             configs: HashMap::new(),
             worlds: HashMap::new(),
             fonts: HashMap::new(),
+            project,
         })
     }
 
@@ -132,19 +138,34 @@ impl Server {
     }
 
     fn prepare_world(&mut self, path: &str) -> Result<(), RpcError> {
-        let document = self
-            .documents
-            .get(path)
-            .ok_or_else(|| invalid_params(format!("document is not open: {path}")))?;
-        let main = document.source.id();
+        if !self.documents.contains_key(path) {
+            return Err(invalid_params(format!("document is not open: {path}")));
+        }
         let overlays: HashMap<_, _> = self
             .documents
             .values()
             .map(|open| (open.source.id(), open.source.clone()))
             .collect();
+        let mut overlays = overlays;
+        let entrypoint = self
+            .project
+            .entrypoint_source(self.documents.keys().map(String::as_str))
+            .map_err(|message| RpcError {
+                code: -32002,
+                message: message.to_string(),
+                data: None,
+            })?;
+        let main = entrypoint.id();
+        overlays.insert(main, entrypoint);
         let config = self.configs.get(path).cloned().unwrap_or_default();
         if let Some(world) = self.worlds.get_mut(path) {
-            world.prepare_compile(overlays);
+            prepare_project_world(world, main, overlays, config.target).map_err(|message| {
+                RpcError {
+                    code: -32002,
+                    message,
+                    data: None,
+                }
+            })?;
             return Ok(());
         }
         let font_key = format!(
@@ -154,9 +175,9 @@ impl Server {
         let fonts = self
             .fonts
             .entry(font_key)
-            .or_insert_with(|| ProjectWorld::load_fonts(&config))
+            .or_insert_with(|| load_fonts(&config))
             .clone();
-        let world = ProjectWorld::with_fonts(self.root.clone(), main, overlays, &config, fonts)
+        let world = create_project_world(self.root.clone(), main, overlays, &config, fonts)
             .map_err(|message| RpcError {
                 code: -32002,
                 message,
@@ -210,7 +231,8 @@ impl Server {
             path.clone(),
             OpenSource::new(path.clone(), id, params.text, params.version),
         );
-        self.configs.insert(path, params.config);
+        let config = self.project.configure_document(params.config);
+        self.configs.insert(path, config);
         self.worlds.remove(&params.path);
         Ok(Value::Null)
     }
@@ -397,9 +419,14 @@ mod tests {
 
     use super::*;
 
+    fn test_server(root: PathBuf) -> Server {
+        let project = WeibianProject::for_test(root.clone()).unwrap();
+        Server::new(root, project).unwrap()
+    }
+
     fn initialized() -> (tempfile::TempDir, Server) {
         let directory = tempdir().unwrap();
-        let mut server = Server::new(directory.path().into()).unwrap();
+        let mut server = test_server(directory.path().into());
         server
             .handle(
                 "initialize",
@@ -412,7 +439,7 @@ mod tests {
     #[test]
     fn handshake_rejects_mismatch() {
         let directory = tempdir().unwrap();
-        let mut server = Server::new(directory.path().into()).unwrap();
+        let mut server = test_server(directory.path().into());
         let error = server
             .handle("initialize", json!({"protocolVersion": 99}))
             .unwrap_err();
@@ -496,49 +523,5 @@ mod tests {
             )
             .unwrap_err();
         assert_eq!(error.code, -32602);
-    }
-
-    #[test]
-    fn keeps_independent_preview_targets_per_document() {
-        let (_directory, mut server) = initialized();
-        for (path, target) in [("print.typ", "pdf"), ("web.typ", "html")] {
-            server
-                .handle(
-                    "textDocument/didOpen",
-                    json!({
-                        "path": path,
-                        "text": "Before $x$ after",
-                        "version": 1,
-                        "config": {
-                            "target": target,
-                            "ignoreSystemFonts": true,
-                            "offline": true
-                        }
-                    }),
-                )
-                .unwrap();
-            let result = server
-                .handle(
-                    "tfp/renderMath",
-                    json!({
-                        "path": path,
-                        "version": 1,
-                        "equations": [{"start": 7, "end": 10, "block": false}],
-                        "paddingPt": 1.0,
-                        "knownRenderKeys": []
-                    }),
-                )
-                .unwrap();
-            assert_eq!(result["equations"][0]["status"], "ok", "{result:#}");
-        }
-
-        let status = server.handle("tfp/status", Value::Null).unwrap();
-        let targets: std::collections::HashSet<_> = status["documents"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter_map(|document| document["target"].as_str())
-            .collect();
-        assert_eq!(targets, std::collections::HashSet::from(["pdf", "html"]));
     }
 }

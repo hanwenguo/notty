@@ -17,9 +17,10 @@ use typst_svg::SvgOptions;
 use typst_syntax::FileId;
 use typst_utils::hash128;
 
+use crate::compiler::world::LibraryWorld;
 use crate::tfp_server::protocol::{PROTOCOL_VERSION, typst_version};
 use crate::tfp_server::source::OpenSource;
-use crate::tfp_server::world::{DocumentConfig, PreviewTarget, ProjectWorld, default_text_color};
+use crate::tfp_server::world::{DocumentConfig, PreviewTarget, default_text_color};
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -113,7 +114,7 @@ pub struct RenderTimings {
 }
 
 pub fn render_math(
-    world: &ProjectWorld,
+    world: &LibraryWorld,
     document: &OpenSource,
     config: &DocumentConfig,
     params: &RenderMathParams,
@@ -335,7 +336,7 @@ fn failed_result(
 }
 
 fn equation_locations(
-    world: &ProjectWorld,
+    world: &LibraryWorld,
     frames: &[FrameSurface<'_>],
     file: FileId,
     start: usize,
@@ -596,7 +597,7 @@ fn render_key(frame: &Frame, source_hash: &str, config: &DocumentConfig, padding
     format!("{:x}", hash.finalize())
 }
 
-fn convert_diagnostic(world: &ProjectWorld, diagnostic: &SourceDiagnostic) -> Diagnostic {
+fn convert_diagnostic(world: &LibraryWorld, diagnostic: &SourceDiagnostic) -> Diagnostic {
     let id = diagnostic.span.id();
     let range = world.range(diagnostic.span);
     let source = id.and_then(|id| world.source(id).ok());
@@ -644,6 +645,7 @@ mod tests {
     use typst::syntax::{RootedPath, Source, VirtualPath, VirtualRoot};
 
     use super::*;
+    use crate::tfp_server::world::{create_project_world, load_fonts};
 
     fn id(path: &str) -> FileId {
         RootedPath::new(
@@ -671,11 +673,13 @@ mod tests {
             offline: true,
             ..DocumentConfig::default()
         };
-        let world = ProjectWorld::new(
+        let fonts = load_fonts(&config);
+        let world = create_project_world(
             directory.path().into(),
             main,
             HashMap::from([(main, Source::new(main, text.into()))]),
             &config,
+            fonts,
         )
         .unwrap();
         render_math(

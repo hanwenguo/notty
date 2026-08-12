@@ -138,7 +138,12 @@ This command implements TFP protocol version 3 over framed JSON-RPC on stdin
 and stdout, including live document synchronization, equation discovery,
 full-document rendering, diagnostics, SVG metrics, and render-key caching. It
 pins the embedded compiler to the Typst 0.15.1 version required by the TFP
-client. Protocol stdout is kept free of logs and diagnostics.
+client. The TFP root must be a configured Weibian input directory: the server
+finds its `weibian.toml` in that directory or an ancestor and always compiles
+the same filtered, synthetic bundle entrypoint as `wb compile`. This keeps
+HTML/bundle features, cross-note queries, synchronized unsaved sources, public
+assets, and `wb-*` site inputs available during formula preview. Protocol
+stdout is kept free of logs and diagnostics.
 
 Configure tfp.el with Weibian as the complete server command prefix; TFP
 appends `--root` and the canonical project root:

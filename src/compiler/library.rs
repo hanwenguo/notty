@@ -1,28 +1,20 @@
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::sync::LazyLock;
 
 use chrono::{DateTime, Datelike, Timelike, Utc};
 use ecow::{EcoVec, eco_format};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::Serialize;
-use typst::diag::{FileError, FileResult, SourceDiagnostic, SourceResult, Warned};
-use typst::foundations::{Bytes, Datetime, Dict, Duration, IntoValue, Smart};
+use typst::diag::{SourceDiagnostic, SourceResult, Warned};
+use typst::foundations::{Datetime, Dict, IntoValue, Smart};
 use typst::layout::PageRanges;
-use typst::syntax::{FileId, RootedPath, Span, VirtualPath, VirtualRoot};
-use typst::text::{Font, FontBook};
-use typst::utils::LazyHash;
+use typst::syntax::{FileId, RootedPath, Source, Span, VirtualPath, VirtualRoot};
 use typst::{Library, LibraryExt, World};
 use typst_bundle::{Bundle, BundleOptions, VirtualFs};
 use typst_html::HtmlOptions;
-use typst_kit::datetime::Time;
-use typst_kit::diagnostics::DiagnosticWorld;
-use typst_kit::downloader::SystemDownloader;
-use typst_kit::files::{FileLoader, FileStore, FsRoot};
-use typst_kit::fonts::FontStore;
-use typst_kit::packages::{FsPackages, SystemPackages, UniversePackages};
 use typst_kit::server::HttpServer;
 use typst_kit::timer::Timer;
 use typst_pdf::{PdfOptions, PdfStandards, Timestamp};
@@ -30,9 +22,8 @@ use typst_render::RenderOptions;
 use typst_svg::SvgOptions;
 use typst_utils::Scalar;
 
-use crate::args::{
-    CompileOutputPath, DepsFormat, DiagnosticFormat, FontArgs, PackageArgs, PdfStandard,
-};
+use crate::args::{CompileOutputPath, DepsFormat, DiagnosticFormat, PdfStandard};
+use crate::compiler::world::{LibraryWorld, WorldOptions, discover_fonts};
 use crate::compiler::{CompilerBackend, forced_feature_names, site_inputs};
 use crate::config::BuildConfig;
 use crate::error::StrResult;
@@ -80,7 +71,7 @@ impl LibraryCompileSession {
     ) -> StrResult<Self> {
         Ok(Self {
             config: LibraryCompileConfig::new(build_config, server)?,
-            world: LibraryWorld::new(build_config, entrypoint)?,
+            world: create_world(build_config, entrypoint)?,
             timer: Timer::new_or_placeholder(build_config.typst.timings.clone()),
         })
     }
@@ -98,7 +89,11 @@ impl LibraryCompileSession {
     }
 
     pub fn replace_entrypoint(&mut self, entrypoint: &str) {
-        self.world.replace_entrypoint(entrypoint);
+        let main = self.world.main();
+        self.world.replace_sources(
+            main,
+            HashMap::from([(main, Source::new(main, entrypoint.into()))]),
+        );
     }
 
     pub fn dependencies(&mut self) -> impl Iterator<Item = PathBuf> + '_ {
@@ -355,194 +350,53 @@ fn convert_datetime<Tz: chrono::TimeZone>(date_time: chrono::DateTime<Tz>) -> Op
     )
 }
 
-struct LibraryWorld {
-    workdir: Option<PathBuf>,
-    library: LazyHash<Library>,
-    fonts: LazyLock<FontStore, Box<dyn Fn() -> FontStore + Send + Sync>>,
-    files: FileStore<WeibianFiles>,
-    now: Time,
-}
-
-impl LibraryWorld {
-    fn new(build_config: &BuildConfig, entrypoint: &str) -> StrResult<Self> {
-        if let Some(jobs) = build_config.typst.process.jobs {
-            rayon::ThreadPoolBuilder::new()
-                .num_threads(jobs)
-                .use_current_thread()
-                .build_global()
-                .ok();
-        }
-
-        let library = {
-            let inputs: Dict = build_config
-                .typst
-                .inputs
-                .iter()
-                .cloned()
-                .chain(site_inputs(build_config))
-                .map(|(key, value)| (key.as_str().into(), value.as_str().into_value()))
-                .collect();
-            let features = parse_features()?;
-
-            Library::builder()
-                .with_inputs(inputs)
-                .with_features(features)
-                .build()
-        };
-
-        let now = match build_config.typst.creation_timestamp {
-            Some(timestamp) => Time::fixed_timestamp(timestamp)
-                .map_err(|_| eco_format!("creation timestamp is out of range"))?,
-            None => Time::system(),
-        };
-
-        let root = build_config.input_directory.canonicalize().map_err(|err| {
-            eco_format!(
-                "failed to canonicalize input directory {}: {err}",
-                build_config.input_directory.display()
-            )
-        })?;
-
-        let font_args = build_config.typst.font.clone();
-        Ok(Self {
-            workdir: std::env::current_dir().ok(),
-            library: LazyHash::new(library),
-            fonts: LazyLock::new(Box::new(move || discover_fonts(&font_args))),
-            files: FileStore::new(WeibianFiles::new(
-                root,
-                entrypoint.as_bytes().to_vec(),
-                &build_config.typst.package,
-            )),
-            now,
-        })
+fn create_world(build_config: &BuildConfig, entrypoint: &str) -> StrResult<LibraryWorld> {
+    if let Some(jobs) = build_config.typst.process.jobs {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(jobs)
+            .use_current_thread()
+            .build_global()
+            .ok();
     }
 
-    fn root(&self) -> &Path {
-        self.files.loader().project.path()
-    }
+    let inputs: Dict = build_config
+        .typst
+        .inputs
+        .iter()
+        .cloned()
+        .chain(site_inputs(build_config))
+        .map(|(key, value)| (key.as_str().into(), value.as_str().into_value()))
+        .collect();
+    let library = Library::builder()
+        .with_inputs(inputs)
+        .with_features(parse_features()?)
+        .build();
+    let main = FileId::unique(RootedPath::new(
+        VirtualRoot::Project,
+        VirtualPath::new("<weibian-entrypoint>").expect("synthetic path is valid"),
+    ));
+    let font = &build_config.typst.font;
+    let package = &build_config.typst.package;
 
-    fn workdir(&self) -> &Path {
-        self.workdir.as_deref().unwrap_or(Path::new("."))
-    }
-
-    fn dependencies(&mut self) -> impl Iterator<Item = PathBuf> + '_ {
-        let (loader, deps) = self.files.dependencies();
-        deps.filter_map(|id| loader.resolve(id).ok())
-    }
-
-    fn reset(&mut self) {
-        self.files.reset();
-        self.now.reset();
-    }
-
-    fn replace_entrypoint(&mut self, entrypoint: &str) {
-        self.files
-            .loader_mut()
-            .replace_entrypoint(entrypoint.as_bytes().to_vec());
-    }
-}
-
-impl World for LibraryWorld {
-    fn library(&self) -> &LazyHash<Library> {
-        &self.library
-    }
-
-    fn book(&self) -> &LazyHash<FontBook> {
-        self.fonts.book()
-    }
-
-    fn main(&self) -> FileId {
-        self.files.loader().main
-    }
-
-    fn source(&self, id: FileId) -> FileResult<typst::syntax::Source> {
-        self.files.source(id)
-    }
-
-    fn file(&self, id: FileId) -> FileResult<Bytes> {
-        self.files.file(id)
-    }
-
-    fn font(&self, index: usize) -> Option<Font> {
-        self.fonts.font(index)
-    }
-
-    fn today(&self, offset: Option<Duration>) -> Option<Datetime> {
-        self.now.today(offset)
-    }
-}
-
-impl DiagnosticWorld for LibraryWorld {
-    fn name(&self, id: FileId) -> String {
-        if id == self.files.loader().main {
-            return "<weibian-entrypoint>".into();
-        }
-
-        let vpath = id.vpath();
-        match id.root() {
-            VirtualRoot::Project => {
-                let rooted = vpath.realize(self.root()).ok();
-                rooted
-                    .and_then(|r| pathdiff::diff_paths(r, self.workdir()))
-                    .map(|path| path.to_string_lossy().into_owned())
-                    .unwrap_or_else(|| vpath.get_without_slash().into())
-            }
-            VirtualRoot::Package(package) => {
-                format!("{package}{}", vpath.get_with_slash())
-            }
-        }
-    }
-}
-
-struct WeibianFiles {
-    main: FileId,
-    project: FsRoot,
-    packages: SystemPackages,
-    entrypoint: Bytes,
-}
-
-impl WeibianFiles {
-    fn new(root: PathBuf, entrypoint: Vec<u8>, package: &PackageArgs) -> Self {
-        let main = FileId::unique(RootedPath::new(
-            VirtualRoot::Project,
-            VirtualPath::new("<weibian-entrypoint>").expect("synthetic path is valid"),
-        ));
-
-        Self {
-            main,
-            project: FsRoot::new(root),
-            packages: system_packages(package),
-            entrypoint: Bytes::new(entrypoint),
-        }
-    }
-
-    fn resolve(&self, id: FileId) -> FileResult<PathBuf> {
-        if id == self.main {
-            return Err(FileError::NotFound("<weibian-entrypoint>".into()));
-        }
-        self.root(id)?.resolve(id.vpath())
-    }
-
-    fn root(&self, id: FileId) -> FileResult<FsRoot> {
-        Ok(match id.root() {
-            VirtualRoot::Project => self.project.clone(),
-            VirtualRoot::Package(spec) => self.packages.obtain(spec)?,
-        })
-    }
-
-    fn replace_entrypoint(&mut self, entrypoint: Vec<u8>) {
-        self.entrypoint = Bytes::new(entrypoint);
-    }
-}
-
-impl FileLoader for WeibianFiles {
-    fn load(&self, id: FileId) -> FileResult<Bytes> {
-        if id == self.main {
-            Ok(self.entrypoint.clone())
-        } else {
-            self.root(id)?.load(id.vpath())
-        }
-    }
+    LibraryWorld::new(WorldOptions {
+        root: build_config.input_directory.clone(),
+        main,
+        main_name: Some("<weibian-entrypoint>".into()),
+        sources: HashMap::from([(main, Source::new(main, entrypoint.into()))]),
+        library,
+        fonts: discover_fonts(
+            &font.font_paths,
+            font.ignore_system_fonts,
+            font.ignore_embedded_fonts,
+        ),
+        extra_package_paths: vec![],
+        package_path: package.package_path.clone(),
+        package_cache_path: package.package_cache_path.clone(),
+        creation_timestamp: build_config.typst.creation_timestamp,
+        offline: false,
+        user_agent: format!("typst/{}", typst::utils::version().raw()),
+    })
+    .map_err(|error| eco_format!("{error}"))
 }
 
 fn parse_features() -> StrResult<typst::Features> {
@@ -556,39 +410,6 @@ fn parse_features() -> StrResult<typst::Features> {
         })
         .collect::<StrResult<Vec<_>>>()
         .map(|features| features.into_iter().collect())
-}
-
-fn discover_fonts(args: &FontArgs) -> FontStore {
-    let mut fonts = FontStore::new();
-
-    if !args.ignore_system_fonts {
-        fonts.extend(typst_kit::fonts::system());
-    }
-
-    if !args.ignore_embedded_fonts {
-        fonts.extend(typst_kit::fonts::embedded());
-    }
-
-    for path in &args.font_paths {
-        fonts.extend(typst_kit::fonts::scan(path));
-    }
-
-    fonts
-}
-
-fn system_packages(args: &PackageArgs) -> SystemPackages {
-    let user_agent = format!("typst/{}", typst::utils::version().raw());
-    SystemPackages::from_parts(
-        args.package_path
-            .clone()
-            .map(FsPackages::new)
-            .or_else(FsPackages::system_data),
-        args.package_cache_path
-            .clone()
-            .map(FsPackages::new)
-            .or_else(FsPackages::system_cache),
-        UniversePackages::new(SystemDownloader::new(user_agent)),
-    )
 }
 
 fn print_diagnostics(

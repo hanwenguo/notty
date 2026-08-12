@@ -54,7 +54,9 @@ fn dispatch() -> StrResult<()> {
             let config = crate::config::load_config(ARGS.global.config_file.as_deref())?;
             crate::watch::watch(command, &config)?;
         }
-        Command::TfpServer(command) => crate::tfp_server::run(&command.root)?,
+        Command::TfpServer(command) => {
+            crate::tfp_server::run(&command.root, ARGS.global.config_file.as_deref())?
+        }
         Command::Completions { shell } => {
             let mut command = CliArguments::command();
             clap_complete::generate(*shell, &mut command, "wb", &mut io::stdout());
