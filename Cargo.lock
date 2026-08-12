@@ -3879,7 +3879,7 @@ checksum = "a28ac98ddc8b9274cb41bb4d9d4d5c425b6020c50c46f25559911905610b4a88"
 
 [[package]]
 name = "weibian"
-version = "2.0.0-rc.8"
+version = "2.1.0-rc.1"
 dependencies = [
  "chrono",
  "clap",
