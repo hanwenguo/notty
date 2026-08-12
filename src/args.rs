@@ -74,12 +74,23 @@ pub enum Command {
     #[command(visible_alias = "w")]
     Watch(WatchCommand),
 
+    /// Runs a TFP-compatible formula preview server over stdin and stdout.
+    TfpServer(TfpServerCommand),
+
     /// Generates a shell completion script.
     Completions {
         /// Shell whose completion script should be generated.
         #[arg(value_enum)]
         shell: Shell,
     },
+}
+
+/// Runs a TFP-compatible formula preview server.
+#[derive(Debug, Clone, Parser)]
+pub struct TfpServerCommand {
+    /// Canonical project root owned by this server process.
+    #[arg(long, value_name = "PROJECT_ROOT", value_hint = ValueHint::DirPath)]
+    pub root: PathBuf,
 }
 
 /// Compiles Typst notes to a bundle.
@@ -565,6 +576,15 @@ mod tests {
     use clap_complete::Shell;
 
     use super::{CliArguments, Command, CompilerBackendKind};
+
+    #[test]
+    fn tfp_server_command_requires_and_parses_root() {
+        let cli = CliArguments::parse_from(["wb", "tfp-server", "--root", "/tmp/project"]);
+        let Command::TfpServer(command) = cli.command else {
+            panic!("tfp-server command should parse");
+        };
+        assert_eq!(command.root, PathBuf::from("/tmp/project"));
+    }
 
     #[test]
     fn watch_command_parses_compile_and_server_options() {

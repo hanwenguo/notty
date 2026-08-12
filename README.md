@@ -124,6 +124,34 @@ A binary built without the `library-compiler` Cargo feature still parses
 `wb watch`, but exits with an error explaining that watch mode requires the
 library compiler.
 
+## TFP formula preview server
+
+Weibian can replace the standalone server used by
+[tfp.el](https://github.com/hanwenguo/tfp.el) for exact inline Typst formula
+previews:
+
+```bash
+wb tfp-server --root /absolute/project/root
+```
+
+This command implements TFP protocol version 3 over framed JSON-RPC on stdin
+and stdout, including live document synchronization, equation discovery,
+full-document rendering, diagnostics, SVG metrics, and render-key caching. It
+pins the embedded compiler to the Typst 0.15.1 version required by the TFP
+client. Protocol stdout is kept free of logs and diagnostics.
+
+Configure tfp.el with Weibian as the complete server command prefix; TFP
+appends `--root` and the canonical project root:
+
+```elisp
+(setq tfp-server-command '("wb" "tfp-server"))
+```
+
+Every command argument is a separate string and no shell parsing is involved.
+Run `M-x tfp-restart-server` after changing the command.
+TFP server mode requires the `library-compiler` Cargo feature; a host-only
+binary reports that limitation without writing protocol traffic.
+
 ## Features
 
 - Utilizes Typst bundle export: just use your Typst templates/styles

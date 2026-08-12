@@ -5,6 +5,7 @@ mod compiler;
 mod config;
 mod error;
 mod terminal;
+mod tfp_server;
 mod watch;
 
 use std::{cell::Cell, io, io::Write, process::ExitCode, sync::LazyLock};
@@ -53,6 +54,7 @@ fn dispatch() -> StrResult<()> {
             let config = crate::config::load_config(ARGS.global.config_file.as_deref())?;
             crate::watch::watch(command, &config)?;
         }
+        Command::TfpServer(command) => crate::tfp_server::run(&command.root)?,
         Command::Completions { shell } => {
             let mut command = CliArguments::command();
             clap_complete::generate(*shell, &mut command, "wb", &mut io::stdout());

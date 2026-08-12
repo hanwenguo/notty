@@ -1,6 +1,6 @@
 [package]
 name = "weibian"
-version = "2.0.0-rc.6"
+version = "2.0.0-rc.7"
 edition = "2024"
 
 [[bin]]
@@ -15,7 +15,9 @@ library-compiler = [
     "dep:open",
     "dep:pathdiff",
     "dep:rayon",
+    "dep:ropey",
     "dep:serde_json",
+    "dep:sha2",
     "dep:typst",
     "dep:typst-bundle",
     "dep:typst-html",
@@ -44,17 +46,22 @@ chrono = { version = "0.4.24", default-features = false, features = ["clock", "s
 open = { version = "5.0.1", optional = true }
 pathdiff = { version = "0.2", optional = true }
 rayon = { version = "1.7.0", optional = true }
+ropey = { version = "1.6.1", optional = true }
 serde_json = { version = "1", optional = true }
-typst = { version = "0.15.0", optional = true }
-typst-bundle = { version = "0.15.0", optional = true }
-typst-html = { version = "0.15.0", optional = true }
-typst-kit = { version = "0.15.0", default-features = false, features = ["bundle", "embedded-fonts", "scan-fonts", "system-packages", "universe-packages", "datetime", "emit-diagnostics", "system-downloader", "timer", "watcher", "http-server"], optional = true }
-typst-layout = { version = "0.15.0", optional = true }
-typst-pdf = { version = "0.15.0", optional = true }
-typst-render = { version = "0.15.0", optional = true }
-typst-svg = { version = "0.15.0", optional = true }
-typst-syntax = { version = "0.15.0", optional = true }
-typst-utils = { version = "0.15.0", optional = true }
+sha2 = { version = "0.10.9", optional = true }
+typst = { version = "=0.15.1", optional = true }
+typst-bundle = { version = "=0.15.1", optional = true }
+typst-html = { version = "=0.15.1", optional = true }
+typst-kit = { version = "=0.15.1", default-features = false, features = ["bundle", "embedded-fonts", "scan-fonts", "system-packages", "universe-packages", "datetime", "emit-diagnostics", "system-downloader", "timer", "watcher", "http-server"], optional = true }
+typst-layout = { version = "=0.15.1", optional = true }
+typst-pdf = { version = "=0.15.1", optional = true }
+typst-render = { version = "=0.15.1", optional = true }
+typst-svg = { version = "=0.15.1", optional = true }
+typst-syntax = { version = "=0.15.1", optional = true }
+typst-utils = { version = "=0.15.1", optional = true }
+
+[dev-dependencies]
+tempfile = "3.23.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 openssl = { version = "0.10.81", features = ["vendored"] }
